@@ -23,6 +23,7 @@ import time
 import random
 import sys
 import urllib
+import os
 
 # Otitis modules
 import otitisglobals
@@ -202,3 +203,32 @@ def getProjectStats(lang, family):
 		return stats
 	return stats
 
+def rankingLastXHours(period):
+	output=u"Editores prolíficos de las últimas %d horas: " % period
+	filename='temp.txt'
+	now=datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+	lastxhours=datetime.datetime.now()-datetime.timedelta(hours=period)
+	lastxhours=lastxhours.strftime('%Y%m%d%H%M%S')
+	sql='''mysql -h eswiki-p.db.toolserver.org -e "use eswiki_p;select concat(rc_user_text,';',count(*)) from recentchanges where rc_timestamp<=%s and rc_timestamp>=%s group by rc_user_text order by count(*) desc limit 10" > %s''' % (now, lastxhours, filename)
+	wikipedia.output(sql)
+	os.system(sql)
+	f=open(filename, 'r')
+	c=0
+	for l in f:
+		l=unicode(l, 'utf-8')
+		l=l[:len(l)-1]
+		if c==0:
+			c+=1
+			continue
+		t=l.split(';')
+		output+=u'%s (%s), ' % (t[0], t[1])
+	f.close()
+	output+=u'... (Sujeto al lag de Toolserver)'
+	
+	return output
+
+def game1():
+	pass
+
+def launchGame(game):
+	return game1()
