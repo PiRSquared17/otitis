@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+#TODO
+# !compare: compara articulos entre wikis (tamaño...)
+# !dump: ultimo dump
+
 """ External modules """
 """ Python modules """
 import os,sys,re
@@ -95,9 +99,17 @@ class BOT(SingleServerIRCBot):
 				'aliases': ['ainfo', 'pageinfo'],
 				'description': u'Muestra información sobre una página',
 				},
+			'compare': {
+				'aliases': ['compare', 'comp', 'compara'],
+				'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
+				},
 			'die': {
 				'aliases': ['die', 'muerete', 'bye', 'quit'],
 				'description': u''
+				},
+			'dump': {
+				'aliases': ['dump', 'dumps'],
+				'description': u'Muestra información sobre el último dump.'
 				},
 			'rank': {
 				'aliases': ['rank', 'ranking'],
@@ -179,7 +191,7 @@ class BOT(SingleServerIRCBot):
 				msg=error
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['ainfo']['aliases']:
-			parametro=nick
+			parametro='Wikipedia:Portada'
 			if len(args)>=2:
 				parametro=' '.join(args[1:])
 			page=wikipedia.Page(otitisglobals.preferences['site'], parametro)
@@ -222,6 +234,35 @@ class BOT(SingleServerIRCBot):
 				msg=u"Error: ese idioma no existe"
 			
 			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['compare']['aliases']:
+			parametro='Wikipedia:Portada'
+			if len(args)>=2:
+				parametro=' '.join(args[1:])
+			page=wikipedia.Page(otitisglobals.preferences['site'], parametro)
+			msg=u''
+			if page.exists():
+				iws=page.interwiki()
+				iws.sort()
+				for iw in iws:
+					if iw.site().lang in ['en', 'fr', 'de', 'pt', 'it', 'ca', 'eu', 'pl', 'ru']:
+						msg+=u"[[:%s:%s]] (%d bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
+			if msg:
+				msg+=u"..."
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['dump']['aliases']:
+			parametro='es'
+			if len(args)>=2:
+				parametro=' '.join(args[1:])
+			
+			url=urllib.urlopen('http://download.wikimedia.org/backup-index.html', 'r')
+			raw=url.read()
+			url.close()
+			m=re.compile(ur'<li>(?P<date>[^<]+?)<a href="%swiki/\d+">%swiki</a>: <span class=\'[^\']+\'>(?P<comment>[^<]+?)</span></li>' % (parametro, parametro)).finditer(raw)
+			msg=u""
+			for i in m:
+				msg+="%swiki dump: %s, %s" % (parametro, i.group('date'), i.group('comment'))
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['help']['aliases']:
 			parametro="help"
 			if len(args)>=2:
