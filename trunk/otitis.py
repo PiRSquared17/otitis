@@ -304,7 +304,7 @@ class BOT(SingleServerIRCBot):
 			if cont>0:
 				msg=u"*Hay %d informes* de vandalismo en curso sin analizar. Por favor, vigila http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso" % cont
 			else:
-				msg=u"*No hay informes* de vandalismo en curso sin analizar. Todo en orden en http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso" % cont
+				msg=u"*No hay informes* de vandalismo en curso sin analizar. Todo en orden en http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso"
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['help']['aliases']:
 			parametro="help"
