@@ -204,7 +204,7 @@ def getProjectStats(lang, family):
 	return stats
 
 def rankingLastXHours(period):
-	output=u"Editores prolíficos de las últimas %d horas: " % period
+	output=u"Editores prolíficos de las últimas _%d horas_: " % period
 	filename='temp.txt'
 	now=datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 	lastxhours=datetime.datetime.now()-datetime.timedelta(hours=period)
@@ -220,15 +220,35 @@ def rankingLastXHours(period):
 		if c==0:
 			c+=1
 			continue
+		c+=1
 		t=l.split(';')
-		output+=u'%s (%s), ' % (t[0], t[1])
+		if c<=3:
+			output+=u'*%s* (%s), ' % (t[0], t[1])
+		else:
+			output+=u'%s (%s), ' % (t[0], t[1])
 	f.close()
-	output+=u'... (Sujeto al lag de Toolserver)'
+	output+=u'... (Sujeto al lag de Toolserver: http://es.wikipedia.org/wiki/Plantilla:Toolserver)'
 	
 	return output
 
 def game1():
 	pass
 
-def launchGame(game):
+def launchGame(parametro, c, self.channel):
 	return game1()
+
+def getNewPagesLastXHours(lang, family, period):
+	site=wikipedia.Site(lang, family)
+	cont=0
+	try:
+		offset=datetime.datetime.now()-datetime.timedelta(hours=period)
+		offset=offset.strftime('%Y%m%d%H%M%S')
+		raw=site.getUrl('/w/index.php?title=Special:Newpages&offset=%s&dir=prev&limit=5000' % (offset))
+		m=re.compile(ur'(?i)\<li[^\>]*?\>\d\d:\d\d').finditer(raw)
+		for i in m:
+			cont+=1
+	except:
+		pass
+	
+	return cont-1
+	

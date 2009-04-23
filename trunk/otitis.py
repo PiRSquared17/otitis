@@ -35,7 +35,7 @@ from ircbot import SingleServerIRCBot
 from irclib import nm_to_n, nm_to_h, irc_lower, ip_numstr_to_quad, ip_quad_to_numstr
 
 """ pywikipediabot modules """
-import wikipedia, difflib
+import wikipedia, difflib, catlib
 
 """ Otitis modules """
 import otitisglobals  #Shared info
@@ -112,9 +112,17 @@ class BOT(SingleServerIRCBot):
 				'aliases': ['dump', 'dumps'],
 				'description': u'Muestra información sobre el último dump',
 				},
+			'efem': {
+				'aliases': ['efem', 'efe', 'efeme', 'efemerides', 'galletita'],
+				'description': u'Muestra una efeméride para el día actual',
+				},
 			'juego': {
 				'aliases': ['juego', 'juegos', 'game', 'games'],
 				'description': u'Algunos juegos de frikis',
+				},
+			'mant': {
+				'aliases': ['mant', 'mantenimiento'],
+				'description': u'Muestra el mantenimiento actual',
 				},
 			'rank': {
 				'aliases': ['rank', 'ranking'],
@@ -236,6 +244,8 @@ class BOT(SingleServerIRCBot):
 			msg=""
 			if otitiscomb.existsLanguage(parametro):
 				good=otitiscomb.getProjectStats(parametro, 'wikipedia')['good']
+				hours=24
+				good_last=otitiscomb.getNewPagesLastXHours(parametro, 'wikipedia', hours)
 				if parametro=='es':
 					msg=u"http://%s.wikipedia.org tiene %d artículos. Puedes crear un artículo solicitado (http://es.wikipedia.org/wiki/Wikipedia:Artículos_solicitados)" % (parametro, good)
 				else:
@@ -243,13 +253,15 @@ class BOT(SingleServerIRCBot):
 					good_diff=good-good_es
 					good_diff_text=''
 					if good_diff<0:
-						good_diff_text=u'%d menos' % good_diff
+						good_diff_text=u'%d menos' % abs(good_diff)
 					else:
-						good_diff_text=u'%d más' % good_diff
-					msg=u"http://%s.wikipedia.org tiene %d artículos (%s que Wikipedia en español). Puedes ver sus últimas creaciones en: http://%s.wikipedia.org/wiki/Special:Newpages" % (parametro, good, good_diff_text, parametro)
+						good_diff_text=u'%d más' % abs(good_diff)
+					msg=u"http://%s.wikipedia.org tiene %d artículos (%s que Wikipedia en español). Se han creado %d en las últimas %d horas. Puedes ver sus últimas creaciones en: http://%s.wikipedia.org/wiki/Special:Newpages" % (parametro, good, good_diff_text, good_last, hours, parametro)
 			else:
 				msg=u"Error: ese idioma no existe"
-			
+			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['author']['aliases']:
+			msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation)"
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['compare']['aliases']:
 			parametro='Wikipedia:Portada'
@@ -280,6 +292,43 @@ class BOT(SingleServerIRCBot):
 				msg+="%swiki dump: %s, %s" % (parametro, i.group('date'), i.group('comment'))
 			if msg:
 				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['efem']['aliases']:
+			mes={1:'enero', 2:'febrero', 3:'marzo', 4:'abril', 5:'mayo', 6:'junio', 7:'julio'}
+			fecha=datetime.datetime.today()
+			diames=u'%s de %s' % (fecha.day, mes[fecha.month])
+			msg=u""
+			efempage=wikipedia.Page(otitisglobals.preferences['site'], diames)
+			m=re.compile(ur'(?im)^\* *(?P<line>\[\[\d+\]\].*?)$').finditer(efempage.get().split('==')[2])
+			temp=[]
+			for i in m:
+				temp.append(i.group('line'))
+			if temp:
+				selected=temp[random.randint(0,len(temp))]
+				selected=re.sub(ur'\[\[([^\|]*?)\|([^\]]*?)\]\]', ur'\2', selected)
+				selected=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', selected)
+				msg=u"Un día como hoy: %s (Extraido de http://es.wikipedia.org/wiki/%s)" % (selected, re.sub(' ', '_',efempage.title()))
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['mant']['aliases']:
+			parametro=0
+			if len(args)>=2:
+				parametro=int(args[1])
+			msg=u""
+			if parametro>365 or parametro<-365:
+				msg=u"El parámetro debe estar entre -365 y 365, ambos inclusive. Por ejemplo: !mant -2 para el mantenimiento de anteayer"
+			else:
+				mes={1:'enero', 2:'febrero', 3:'marzo', 4:'abril', 5:'mayo', 6:'junio', 7:'julio'}
+				fecha=datetime.datetime.today()+datetime.timedelta(days=parametro)
+				diames=u'%s de %s' % (fecha.day, mes[fecha.month])
+				mantcat=catlib.Category(otitisglobals.preferences['site'], u'Categoría:Wikipedia:Mantenimiento:%s' % diames)
+				
+				mantnum=len(mantcat.articlesList())
+				if mantnum>0:
+					msg=u"*Hay que hacer mantenimiento* en %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s" % (mantnum, re.sub(' ', '_', mantcat.title()))
+				else:
+					msg=u"*No hay mantenimiento* que hacer. Todo en orden en http://es.wikipedia.org/wiki/%s" % (re.sub(' ', '_', mantcat.title()))
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['rank']['aliases']:
 			parametro=24
 			msg=u""
@@ -293,8 +342,8 @@ class BOT(SingleServerIRCBot):
 				c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['juego']['aliases']:
 			parametro=1
-			msg=u"El ganador es... \"Usuario:%s\"" % otitiscomb.launchGame(1, c, self.channel)
-			c.privmsg(self.channel, msg.encode('utf-8'))
+			otitiscomb.launchGame(parametro, c, self.channel)
+			#c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['vec']['aliases']:
 			vecpage=wikipedia.Page(otitisglobals.preferences['site'], u'Wikipedia:Vandalismo en curso')
 			m=re.compile(ur'(?i)a rellenar por un bibliotecario').finditer(vecpage.get())
@@ -308,13 +357,24 @@ class BOT(SingleServerIRCBot):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['help']['aliases']:
 			parametro="help"
+			msg=u""
+			error=u""
 			if len(args)>=2:
 				parametro=' '.join(args[1:])
-				msg=u"Comando '!%s': %s. Redirecciones de este comando son: !%s" % (parametro, cmds[parametro]['description'], ', !'.join(cmds[parametro]['aliases']))
+				if cmds.has_key(parametro):
+					msg=u"Comando '!%s': %s. Redirecciones de este comando son: !%s" % (parametro, cmds[parametro]['description'], ', !'.join(cmds[parametro]['aliases']))
+				else:
+					error=u"Comando desconocido"
 				c.privmsg(self.channel, msg.encode('utf-8'))
 			else:
-				msg=u"%s" % (cmds[parametro]['description'])
+				if cmds.has_key(parametro):
+					msg=u"%s" % (cmds[parametro]['description'])
+				else:
+					error=u"Comando desconocido"
+			if msg:
 				c.privmsg(self.channel, msg.encode('utf-8'))
+			elif error:
+				c.notice(nick, error.encode('utf-8'))
 		else:
 			msg=u"Comando desconocido."
 			c.notice(nick, msg.encode('utf-8'))
