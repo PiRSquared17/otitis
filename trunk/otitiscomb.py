@@ -95,12 +95,16 @@ def getParameters():
 		wikipedia.output(u"Not all obligatory parameters were found. Please, check (*) parameters.")
 		sys.exit()
 
-def loadUserEdits(author):
+def loadUserEdits(author, lang, family):
 	""" Carga número de ediciones de un usuario en concreto """
 	""" Load user edits number """
 	author_=re.sub(' ', '_', author)
+	
+	langs=otitisglobals.preferences['wikilangs']
+	families=['commons', 'wiktionary', 'wikisource', 'wikinews', 'wikibooks', 'wikiquote', 'wikispecies', 'meta', 'wikiversity']
 	try:
-		rawdata=otitisglobals.preferences['site'].getUrl("/w/api.php?action=query&list=users&ususers=%s&usprop=editcount&format=xml" % urllib.quote(author_))
+		site=wikipedia.Site(lang, family)
+		rawdata=site.getUrl("/w/api.php?action=query&list=users&ususers=%s&usprop=editcount&format=xml" % author_.encode('utf-8'))
 		if re.search(u"editcount", rawdata):
 			m=re.compile(ur' editcount="(?P<editcount>\d+)"').finditer(rawdata)
 			for i in m:
@@ -109,3 +113,92 @@ def loadUserEdits(author):
 			return 0
 	except:
 		return 0
+
+def existsLanguage(lang):
+	return lang.lower() in otitisglobals.preferences['wikilangs']
+
+def existsFamily(family):
+	families=['commons', 'wiktionary', 'wikisource', 'wikinews', 'wikibooks', 'wikiquote', 'wikispecies', 'meta', 'wikiversity']
+	return family.lower() in families
+
+def translateFamily(family):
+	family=family.lower()
+	
+	if family in ['wikipedia', 'wiki', 'w']:
+		return 'wikipedia'
+	elif family in ['commons']:
+		return 'commons'
+	elif family in ['wiktionary', 'wikt', 'wykt', 'wikc', 'wikci', 'wikcionario', 'wiktionario']:
+		return 'wiktionary'
+	elif family in ['wikisource', 'source', 's']:
+		return 'wikisource'
+	elif family in ['wikinews', 'news', 'wikinoticias', 'noticias', 'n']:
+		return 'wikinews'
+	elif family in ['wikibooks', 'books', 'wikilibros', 'libros', 'b']:
+		return 'wikibooks'
+	elif family in ['wikiquote', 'quote', 'q', 'wikicitas', 'citas']:
+		return 'wikiquote'
+	elif family in ['wikispecies', 'wikiespecies', 'species', 'especies']:
+		return 'wikispecies'
+	elif family in ['meta', 'metawiki', 'meta-wiki', 'm']:
+		return 'meta'
+	elif family in ['wikiversity', 'wikiversidad', 'v']:
+		return 'wikiversity'
+	
+	return 'unknown'
+
+def loadLanguages():
+	raw=otitisglobals.preferences['site'].getUrl('/w/index.php?title=Special:SiteMatrix')
+	m=re.compile(ur'http://(?P<lang>[a-z\-]+)\.wikipedia\.org').finditer(raw)
+	l=[]
+	for i in m:
+		l.append(i.group('lang'))
+	l.sort()
+	return l
+
+def getFirstLastEditInfo(user, lang, family, dir):
+	article=timestamp=''
+	user_=re.sub(' ', '_', user)
+	raw=otitisglobals.preferences['site'].getUrl('/w/index.php?title=Especial:Contribuciones%s&limit=1&target=%s' % (dir, user_.encode('utf-8')))
+	m=re.compile(ur'(\d\d:\d\d \d+ (ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic) \d\d\d\d)').finditer(raw)
+	for i in m:
+		timestamp=i.group(1)
+	
+	m=re.compile(ur'<a href="/wiki/[^\"]+?" title="(?P<article>[^>]+?)">\1</a>').finditer(raw)
+	for i in m:
+		article=i.group('article')
+	
+	return article, timestamp
+	
+def getFirstEditInfo(user, lang, family):
+	return getFirstLastEditInfo(user, lang, family, '&dir=prev')
+	
+def getLastEditInfo(user, lang, family):
+	return getFirstLastEditInfo(user, lang, family, '')
+
+def getDateTimeObject(date):
+	#02:13 4 ene 2003
+	months={'ene':1, 'feb': 2, 'mar': 3, 'abr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'ago': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12}
+	
+	t=date.split(' ')
+	year=int(t[3])
+	month=int(months[t[2]])
+	day=int(t[1])
+	hour=int(t[0][0:2])
+	minute=int(t[0][3:5])
+	
+	return datetime.datetime(year, month, day, hour, minute)
+
+def getProjectStats(lang, family):
+	stats={}
+	try:
+		site=wikipedia.Site(lang, family)
+		rawdata=site.getUrl("/w/index.php?title=Special:Statistics&action=raw")
+		t=rawdata.split(';')
+		for i in t:
+			tt=i.split('=')
+			stats[tt[0]]=int(tt[1])
+	except:
+		return stats
+	return stats
+

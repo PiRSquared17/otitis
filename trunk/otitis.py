@@ -83,32 +83,45 @@ class BOT(SingleServerIRCBot):
 		#definición de comandos
 		#die*, info, tam, art, en-es*, es-en*, orto*, drae*, [[]]*, {{}}*, busca-es*, busca-en*, busca-ca*, busca-de*, busca-fr*, busca-it*, busca-co*, busca-go*, mantenimiento*, tonteria*, mes*, galletita, =*, hora*, pi*, e*, wikipedia*, google*, help*, all*
 		cmds={
+			'art': {
+				'aliases': ['art', 'arts', 'pene'],
+				'description': u'Muestra el número de artículos de cierta Wikipedia',
+				},
 			'info': {
 				'aliases': ['info', 'uinfo', 'userinfo', 'user', 'usuario'],
-				'description': u'Muestra información sobre un usuario.',
+				'description': u'Muestra información sobre un usuario. Por ejemplo: !info Jimbo Wales',
 				},
 			'ainfo': {
 				'aliases': ['ainfo', 'pageinfo'],
-				'description': u'Muestra información sobre una página.',
+				'description': u'Muestra información sobre una página',
 				},
 			'die': {
 				'aliases': ['die', 'muerete', 'bye', 'quit'],
 				'description': u''
+				},
 			'rank': {
 				'aliases': ['rank', 'ranking'],
-				'description': u'Muestra algunos rankings.',
+				'description': u'Muestra algunos rankings',
 				},
 			'stats': {
 				'aliases': ['stats', 'statistics'],
-				'description': u'Muestra algunas estadísticas de Wikipedia.',
+				'description': u'Muestra algunas estadísticas de Wikipedia',
 				},
 			'time': {
 				'aliases': ['time', 'timestamp', 'hora'],
-				'description': u'Muestra la hora del sistema en UTC.',
+				'description': u'Muestra la hora del sistema en UTC',
 				},
 			'all': {
-				'aliases': ['all', 'cmd', 'cmds', 'comando', 'comandos', 'help', 'ayuda'],
-				'description': u'Muestra todos los comandos existentes.',
+				'aliases': ['all', 'cmd', 'cmds', 'comando', 'comandos'],
+				'description': u'Muestra todos los comandos existentes',
+				},
+			'help': {
+				'aliases': ['help', 'ayuda'],
+				'description': u'Esta es la ayuda de Otitis. Para ver los comandos existentes escribe !all. Para saber más sobre un comando usa !help comando',
+				},
+			'author': {
+				'aliases': ['author', 'autor', 'creador'],
+				'description': u'Muestra información sobre mi(s) creador(es)',
 				},
 		}
 		
@@ -121,15 +134,49 @@ class BOT(SingleServerIRCBot):
 			parametro=nick
 			if len(args)>=2:
 				parametro=' '.join(args[1:])
-			parametro_=re.sub(" ", "_", parametro)
-			ediciones=otitiscomb.loadUserEdits(parametro)
-			primeraArticulo=""
-			primeraFecha=""
-			ultimaArticulo=""
-			ultimaFecha=""
-			edad=""
-			grupos=""
-			msg=u"[[Usuario:%s]] tiene %d ediciones. Primera: [[%s]] (%s). Última: [[%s]] (%s). Edad: %s. Ediciones/día: %.1f. Grupos: %s. Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (parametro, ediciones, primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad, 1.0, grupos, otitisglobals.preferences['language'], otitisglobals.preferences['family'], parametro_)
+			parametro=re.sub(ur'[\[\]]', ur'', parametro)
+			parametro=re.sub(ur'([^\|]*?)\|.*', ur'\1', parametro)
+			t=parametro.split(':')
+			lang=''
+			family=''
+			user=nick
+			if len(t)>=3:
+				user=':'.join(t[2:])
+				for i in range(0,2):
+					if otitiscomb.existsLanguage(t[i]):
+						lang=t[i]
+					if otitiscomb.existsFamily(otitiscomb.translateFamily(t[i])):
+						family=otitiscomb.translateFamily(t[i])
+			elif len(t)==2:
+				user=':'.join(t[1:])
+				if otitiscomb.existsLanguage(t[0]):
+					lang=t[0]
+				if otitiscomb.existsFamily(otitiscomb.translateFamily(t[0])):
+					family=otitiscomb.translateFamily(t[0])
+			else:
+				user=t[0]
+				lang='es'
+				family='wikipedia'
+			
+			msg=u""
+			error=u"Has cometido un error. El formato adecuado es: !info usuario, !info idioma:usuario, !info proyecto:usuario o !info idioma:proyecto:usuario"
+			
+			if lang:
+				if family:
+					if not user:
+						user=nick
+					ediciones=otitiscomb.loadUserEdits(user, lang, family)
+					[primeraArticulo, primeraFecha]=otitiscomb.getFirstEditInfo(user, lang, family)
+					[ultimaArticulo, ultimaFecha]=otitiscomb.getLastEditInfo(user, lang, family)
+					primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
+					ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
+					edad=ultimaFechaObject-primeraFechaObject
+					grupos=""
+					msg=u"[[%s:%s:User:%s]] tiene %d ediciones. Primera: [[%s]] (%s). Última: [[%s]] (%s). Edad: %s días. Ediciones/día: %.1f. Grupos: %s. Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, user, ediciones, primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad.days, ediciones*1.0/int(edad.days), grupos, lang, family, re.sub(ur' ', ur'_', user))
+				else:
+					msg=error
+			else:
+				msg=error
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['ainfo']['aliases']:
 			parametro=nick
@@ -146,10 +193,46 @@ class BOT(SingleServerIRCBot):
 					msg=u"[[%s]]: %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['all']['aliases']:
-			msg=u""
+			temp=[]
 			for k, v in cmds.items():
-				msg+=k+u", "
-			msg+=u"..."
+				temp.append(k)
+			temp.sort()
+			msg=u"Comandos disponibles: !%s. Para saber más sobre ellos utiliza !help comando. Por ejemplo: !help info" % (', !'.join(temp))
+			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['art']['aliases']:
+			parametro='es'
+			if len(args)>=2:
+				parametro=' '.join(args[1:])
+			
+			msg=""
+			if otitiscomb.existsLanguage(parametro):
+				good=otitiscomb.getProjectStats(parametro, 'wikipedia')['good']
+				if parametro=='es':
+					msg=u"http://%s.wikipedia.org tiene %d artículos. Puedes crear un artículo solicitado (http://es.wikipedia.org/wiki/Wikipedia:Artículos_solicitados)" % (parametro, good)
+				else:
+					good_es=otitiscomb.getProjectStats('es', 'wikipedia')['good']
+					good_diff=good-good_es
+					good_diff_text=''
+					if good_diff<0:
+						good_diff_text=u'%d menos' % good_diff
+					else:
+						good_diff_text=u'%d más' % good_diff
+					msg=u"http://%s.wikipedia.org tiene %d artículos (%s que Wikipedia en español). Puedes ver sus últimas creaciones en: http://%s.wikipedia.org/wiki/Special:Newpages" % (parametro, good, good_diff_text, parametro)
+			else:
+				msg=u"Error: ese idioma no existe"
+			
+			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['help']['aliases']:
+			parametro="help"
+			if len(args)>=2:
+				parametro=' '.join(args[1:])
+				msg=u"Comando '!%s': %s. Redirecciones de este comando son: !%s" % (parametro, cmds[parametro]['description'], ', !'.join(cmds[parametro]['aliases']))
+				c.privmsg(self.channel, msg.encode('utf-8'))
+			else:
+				msg=u"%s" % (cmds[parametro]['description'])
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		else:
+			msg=u"Comando desconocido."
 			c.privmsg(self.channel, msg.encode('utf-8'))
 
 def main():
