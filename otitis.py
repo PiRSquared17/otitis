@@ -75,17 +75,49 @@ class BOT(SingleServerIRCBot):
 		nick = nm_to_n(e.source())
 		
 		wikipedia.output('%s > %s' % (nick, line))
-		#c.notice(nick, line.encode('utf-8'))
 		
+		#descartamos lineas muy cortas o que no empiezan por !
 		if len(line)<2 or line[0]!='!':
 			return
 		
+		#definición de comandos
+		#die*, info, tam, art, en-es*, es-en*, orto*, drae*, [[]]*, {{}}*, busca-es*, busca-en*, busca-ca*, busca-de*, busca-fr*, busca-it*, busca-co*, busca-go*, mantenimiento*, tonteria*, mes*, galletita, =*, hora*, pi*, e*, wikipedia*, google*, help*, all*
+		cmds={
+			'info': {
+				'aliases': ['info', 'uinfo', 'userinfo', 'user', 'usuario'],
+				'description': u'Muestra información sobre un usuario.',
+				},
+			'ainfo': {
+				'aliases': ['ainfo', 'pageinfo'],
+				'description': u'Muestra información sobre una página.',
+				},
+			'die': {
+				'aliases': ['die', 'muerete', 'bye', 'quit'],
+				'description': u''
+			'rank': {
+				'aliases': ['rank', 'ranking'],
+				'description': u'Muestra algunos rankings.',
+				},
+			'stats': {
+				'aliases': ['stats', 'statistics'],
+				'description': u'Muestra algunas estadísticas de Wikipedia.',
+				},
+			'time': {
+				'aliases': ['time', 'timestamp', 'hora'],
+				'description': u'Muestra la hora del sistema en UTC.',
+				},
+			'all': {
+				'aliases': ['all', 'cmd', 'cmds', 'comando', 'comandos', 'help', 'ayuda'],
+				'description': u'Muestra todos los comandos existentes.',
+				},
+		}
+		
+		#parseo de la línea
 		args=line[1:].split(' ')
 		cmd=args[0].lower()
 		
-		cmds={u'info':{}, u'ainfo':{}, u'all':{}}
-		
-		if cmd=='info':
+		#qué comando ha introducido?
+		if cmd in cmds['info']['aliases']:
 			parametro=nick
 			if len(args)>=2:
 				parametro=' '.join(args[1:])
@@ -99,7 +131,7 @@ class BOT(SingleServerIRCBot):
 			grupos=""
 			msg=u"[[Usuario:%s]] tiene %d ediciones. Primera: [[%s]] (%s). Última: [[%s]] (%s). Edad: %s. Ediciones/día: %.1f. Grupos: %s. Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (parametro, ediciones, primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad, 1.0, grupos, otitisglobals.preferences['language'], otitisglobals.preferences['family'], parametro_)
 			c.privmsg(self.channel, msg.encode('utf-8'))
-		elif cmd=='ainfo':
+		elif cmd in cmds['ainfo']['aliases']:
 			parametro=nick
 			if len(args)>=2:
 				parametro=' '.join(args[1:])
@@ -113,7 +145,7 @@ class BOT(SingleServerIRCBot):
 				else:
 					msg=u"[[%s]]: %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()))
 			c.privmsg(self.channel, msg.encode('utf-8'))
-		elif cmd=='all':
+		elif cmd in cmds['all']['aliases']:
 			msg=u""
 			for k, v in cmds.items():
 				msg+=k+u", "
