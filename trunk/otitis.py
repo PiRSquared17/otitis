@@ -17,8 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #TODO
-# !compare: compara articulos entre wikis (tamaño...)
-# !dump: ultimo dump
+# ultimas creaciones
+# velocidad
+# ediciones dia
 
 """ External modules """
 """ Python modules """
@@ -105,11 +106,15 @@ class BOT(SingleServerIRCBot):
 				},
 			'die': {
 				'aliases': ['die', 'muerete', 'bye', 'quit'],
-				'description': u''
+				'description': u'Finge una muerte atroz'
 				},
 			'dump': {
 				'aliases': ['dump', 'dumps'],
-				'description': u'Muestra información sobre el último dump.'
+				'description': u'Muestra información sobre el último dump',
+				},
+			'juego': {
+				'aliases': ['juego', 'juegos', 'game', 'games'],
+				'description': u'Algunos juegos de frikis',
 				},
 			'rank': {
 				'aliases': ['rank', 'ranking'],
@@ -122,6 +127,10 @@ class BOT(SingleServerIRCBot):
 			'time': {
 				'aliases': ['time', 'timestamp', 'hora'],
 				'description': u'Muestra la hora del sistema en UTC',
+				},
+			'vec': {
+				'aliases': ['vec', 'wp:vec'],
+				'description': u'Muestra información acerca de Wikipedia:Vandalismo en curso',
 				},
 			'all': {
 				'aliases': ['all', 'cmd', 'cmds', 'comando', 'comandos'],
@@ -178,13 +187,21 @@ class BOT(SingleServerIRCBot):
 					if not user:
 						user=nick
 					ediciones=otitiscomb.loadUserEdits(user, lang, family)
-					[primeraArticulo, primeraFecha]=otitiscomb.getFirstEditInfo(user, lang, family)
-					[ultimaArticulo, ultimaFecha]=otitiscomb.getLastEditInfo(user, lang, family)
-					primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
-					ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
-					edad=ultimaFechaObject-primeraFechaObject
-					grupos=""
-					msg=u"[[%s:%s:User:%s]] tiene %d ediciones. Primera: [[%s]] (%s). Última: [[%s]] (%s). Edad: %s días. Ediciones/día: %.1f. Grupos: %s. Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, user, ediciones, primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad.days, ediciones*1.0/int(edad.days), grupos, lang, family, re.sub(ur' ', ur'_', user))
+					if ediciones!=0:
+						[primeraArticulo, primeraFecha]=otitiscomb.getFirstEditInfo(user, lang, family)
+						[ultimaArticulo, ultimaFecha]=otitiscomb.getLastEditInfo(user, lang, family)
+						primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
+						ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
+						edad=datetime.datetime.now()-primeraFechaObject
+						grupos=""
+						ranking=""
+						rankingpage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de ediciones')
+						m=re.compile(ur"(?im)^\| (?P<position>\d+) \|\| \[\[User:%s\|%s\]\]" % (user, user)).finditer(rankingpage.get())
+						for i in m:
+							ranking=i.group('position')
+						if not ranking:
+							ranking=u">500"
+						msg=u"\"%s:%s:User:%s\" tiene %d ediciones. Primera: \"%s\" (%s). Última: \"%s\" (%s). Edad: %s días. Ediciones/día: %.1f. Grupos: %s. Puesto en el ranking de ediciones: *%s*. Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, user, ediciones, primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad.days, ediciones*1.0/int(edad.days), grupos, ranking, lang, family, re.sub(ur' ', ur'_', user))
 				else:
 					msg=error
 			else:
@@ -198,11 +215,11 @@ class BOT(SingleServerIRCBot):
 			msg=''
 			if page.exists():
 				if page.isRedirectPage():
-					msg=u"[[%s]]: #REDIRECCIÓN [[%s]]" % (parametro, page.getRedirectTarget().title())
+					msg=u"\"%s\": #REDIRECCIÓN [[%s]]" % (parametro, page.getRedirectTarget().title())
 				elif page.isDisambig():
-					msg=u"[[%s]]: Desambiguación" % (parametro)
+					msg=u"\"%s\": Desambiguación" % (parametro)
 				else:
-					msg=u"[[%s]]: %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()))
+					msg=u"\"%s\": %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['all']['aliases']:
 			temp=[]
@@ -245,7 +262,7 @@ class BOT(SingleServerIRCBot):
 				iws.sort()
 				for iw in iws:
 					if iw.site().lang in ['en', 'fr', 'de', 'pt', 'it', 'ca', 'eu', 'pl', 'ru']:
-						msg+=u"[[:%s:%s]] (%d bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
+						msg+=u"\"%s:%s\" (%d bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
 			if msg:
 				msg+=u"..."
 				c.privmsg(self.channel, msg.encode('utf-8'))
@@ -263,6 +280,32 @@ class BOT(SingleServerIRCBot):
 				msg+="%swiki dump: %s, %s" % (parametro, i.group('date'), i.group('comment'))
 			if msg:
 				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['rank']['aliases']:
+			parametro=24
+			msg=u""
+			if len(args)>=2:
+				parametro=int(args[1])
+			if parametro>=1 and parametro<=72:
+				msg=otitiscomb.rankingLastXHours(parametro)
+			else:
+				msg=u"El periodo debe estar entre 1 y 72 horas, ambos inclusive"
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['juego']['aliases']:
+			parametro=1
+			msg=u"El ganador es... \"Usuario:%s\"" % otitiscomb.launchGame(1, c, self.channel)
+			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['vec']['aliases']:
+			vecpage=wikipedia.Page(otitisglobals.preferences['site'], u'Wikipedia:Vandalismo en curso')
+			m=re.compile(ur'(?i)a rellenar por un bibliotecario').finditer(vecpage.get())
+			cont=0
+			for i in m:
+				cont+=1
+			if cont>0:
+				msg=u"*Hay %d informes* de vandalismo en curso sin analizar. Por favor, vigila http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso" % cont
+			else:
+				msg=u"*No hay informes* de vandalismo en curso sin analizar. Todo en orden en http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso" % cont
+			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['help']['aliases']:
 			parametro="help"
 			if len(args)>=2:
@@ -274,7 +317,7 @@ class BOT(SingleServerIRCBot):
 				c.privmsg(self.channel, msg.encode('utf-8'))
 		else:
 			msg=u"Comando desconocido."
-			c.privmsg(self.channel, msg.encode('utf-8'))
+			c.notice(nick, msg.encode('utf-8'))
 
 def main():
 	""" Crea un objeto BOT y lo lanza """
