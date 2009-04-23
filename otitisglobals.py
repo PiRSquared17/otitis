@@ -80,6 +80,8 @@ if not preferences['channel']:
 if not preferences['nickname']:
 	preferences['nickname'] = '%s%s' % (preferences['botNick'], str(random.randint(1000, 9999)))
 
+preferences['wikilangs']=otitiscomb.loadLanguages()
+
 global statsDic
 statsDic={}
 statsDic[2]  = {'v':0,'bl':0,'p':0,'s':0,'b':0,'m':0,'t':0,'d':0}
