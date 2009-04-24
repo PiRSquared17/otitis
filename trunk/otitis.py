@@ -26,8 +26,6 @@
 #poner retardo a comandos pesados
 #diff aleatorio
 #curiosidad aleatoria
-#visitas de un articulo
-
 
 """ External modules """
 """ Python modules """
@@ -92,6 +90,10 @@ def on_pubmsg_thread(self, c, e):
 		'compare': {
 			'aliases': ['compare', 'comp', 'compara'],
 			'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
+			},
+		'dest': {
+			'aliases': ['dest', 'destruir', 'destroy'],
+			'description': u'Muestra el número de páginas a la espera de ser destruidas',
 			},
 		'die': {
 			'aliases': ['die', 'muerete', 'bye', 'quit'],
@@ -273,7 +275,7 @@ def on_pubmsg_thread(self, c, e):
 			temp.append(k)
 		temp.sort()
 		msg=u"Comandos disponibles: !%s. Para saber más sobre ellos utiliza !help comando. Por ejemplo: !help info" % (', !'.join(temp))
-		c.privmsg(self.channel, msg.encode('utf-8'))
+		c.notice(nick, msg.encode('utf-8'))
 	elif cmd in cmds['art']['aliases']:
 		parametro='es'
 		if len(args)>=2:
@@ -299,7 +301,7 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"Error: ese idioma no existe"
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['author']['aliases']:
-		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
+		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Código: http://code.google.com/p/otitis/. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['cab']['aliases']:
 		cabtemplate=wikipedia.Page(otitisglobals.preferences['site'], u'Plantilla:ResumenCandidaturasBibliotecario')
@@ -322,6 +324,16 @@ def on_pubmsg_thread(self, c, e):
 					msg+=u"\"%s:%s\" (%d bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
 		if msg:
 			msg+=u"..."
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['dest']['aliases']:
+		msg=u""
+		destcat=catlib.Category(wikipedia.Site('es', 'wikipedia'), u"Categoría:Wikipedia:Borrar (definitivo)")
+		destnum=len(destcat.articlesList())
+		if destnum>0:
+			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s_" % (destnum, re.sub(' ', '_', destcat.title()))
+		else:
+			msg=u"*No hay que borrar* ninguna página. Todo en orden en http://es.wikipedia.org/wiki/%s_" % (re.sub(' ', '_', destcat.title()))
+		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['dump']['aliases']:
 		parametro='es'
@@ -350,7 +362,8 @@ def on_pubmsg_thread(self, c, e):
 			selected=temp[random.randint(0,len(temp))]
 			selected=re.sub(ur'\[\[([^\|]*?)\|([^\]]*?)\]\]', ur'\2', selected)
 			selected=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', selected)
-			msg=u"Un día como hoy: %s (Extraido de http://es.wikipedia.org/wiki/%s)" % (selected, re.sub(' ', '_',efempage.title()))
+			selected=re.sub(ur'\&nbsp\;', ur' ', selected)
+			msg=u"Un día como hoy: %s Extraido de http://es.wikipedia.org/wiki/%s" % (selected, re.sub(' ', '_',efempage.title()))
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['encarta']['aliases']:
@@ -447,16 +460,25 @@ def on_pubmsg_thread(self, c, e):
 	elif cmd in cmds['visitas']['aliases']:
 		#<li class="sent bar" style="height: 280px; left: 400px;"><p style="margin-left: -3px;">3</p></li>
 		parametro=u""
+		pagina=u""
+		lang=u""
 		msg=u""
 		error=u""
-		url=''
+		url=u""
 		day=datetime.datetime.today().day
 		month=datetime.datetime.today().month
 		if len(args)>=2:
 			parametro=' '.join(args[1:])
 		if parametro:
+			t=parametro.split(':')
+			if len(t)>1:
+				pagina=':'.join(t[1:])
+				lang=t[0]
+			else:
+				lang='es'
+				pagina=parametro
 			try:
-				url='http://stats.grok.se/es/%s/%s' % (datetime.datetime.now().strftime('%Y%m'), re.sub(' ', '_', parametro))
+				url='http://stats.grok.se/%s/%s/%s' % (lang, datetime.datetime.now().strftime('%Y%m'), re.sub(' ', '_', pagina))
 				f=urllib.urlopen(url, 'r')
 				m=re.compile(ur"(?i)<li class=\"sent bar\" style=\"height: \d+px; left: \d+px;\"><p style=\"margin-left: \-?\d+px;\">(?P<visits>[\d\.k]+)</p></li>").finditer(f.read())
 				cont=0
@@ -474,7 +496,7 @@ def on_pubmsg_thread(self, c, e):
 		else:
 			error=u"Introduzca un nombre de página. Puedes ver estadísticas de visitas en http:/stats.grok.se"
 		if msg:
-			msg=u"Hoy es %s de %s. Visitas a \"%s\" en los últimos días: %s... Extraido de: %s" % (day, otitiscomb.number2month(month), parametro, msg, url)
+			msg=u"Hoy es %s de %s. Visitas a \"%s\" en los últimos días: %s... Extraido de: %s. Página en Wikipedia: http://%s.wikipedia.org/wiki/%s" % (day, otitiscomb.number2month(month), parametro, msg, url, lang, re.sub(' ', '_', pagina))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif error:
 			c.privmsg(self.channel, error.encode('utf-8'))
@@ -484,6 +506,11 @@ def on_pubmsg_thread(self, c, e):
 		error=u""
 		if len(args)>=2:
 			parametro=' '.join(args[1:])
+			parametro=re.sub(ur'(?im)^\!+', ur'', parametro)
+			if not cmds.has_key(parametro):
+				for k, v in cmds.items():
+					if parametro in v['aliases']:
+						parametro=k
 			if cmds.has_key(parametro):
 				msg=u"Comando '!%s': %s. Redirecciones de este comando son: !%s" % (parametro, cmds[parametro]['description'], ', !'.join(cmds[parametro]['aliases']))
 			else:
@@ -494,7 +521,7 @@ def on_pubmsg_thread(self, c, e):
 			else:
 				error=u"Comando desconocido"
 		if msg:
-			c.privmsg(self.channel, msg.encode('utf-8'))
+			c.notice(nick, msg.encode('utf-8'))
 		elif error:
 			c.notice(nick, error.encode('utf-8'))
 	else:
