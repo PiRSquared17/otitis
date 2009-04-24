@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Otitis - IRC bot for Wikimedia projects
-# Copyright (C) 2008 Emilio José Rodríguez Posada
+# Copyright (C) 2009 Emilio José Rodríguez Posada
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -23,9 +23,11 @@
 # paginas antiguas
 # contenido por wikiproyecto?
 # lag toolserver
-#poner retardo a comandos pesados
-#diff aleatorio
-#curiosidad aleatoria
+# poner retardo a comandos pesados
+# diff aleatorio
+# curiosidad aleatoria
+# parsear special pages (longpages...)
+# !info mostrar usuarios anterior y posterior al usuario en el ranking
 
 """ External modules """
 """ Python modules """
@@ -218,7 +220,7 @@ def on_pubmsg_thread(self, c, e):
 					user=nick
 				ediciones=otitiscomb.loadUserEdits(user, lang, family)
 				if ediciones>=0:
-					msg+=u"\"%s:%s:User:%s\" tiene %d ediciones." % (lang, family, user, ediciones)
+					msg+=u"\"%s:%s:User:%s\" tiene *%d* ediciones." % (lang, family, user, ediciones)
 					[primeraArticulo, primeraFecha]=otitiscomb.getFirstEditInfo(user, lang, family)
 					[ultimaArticulo, ultimaFecha]=otitiscomb.getLastEditInfo(user, lang, family)
 					media=0.0
@@ -257,17 +259,26 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, error.encode('utf-8'))
 	elif cmd in cmds['ainfo']['aliases']:
 		parametro='Wikipedia:Portada'
+		lang=''
 		if len(args)>=2:
 			parametro=' '.join(args[1:])
-		page=wikipedia.Page(otitisglobals.preferences['site'], parametro)
+		if parametro:
+			t=parametro.split(':')
+			if len(t)>1:
+				pagina=':'.join(t[1:])
+				lang=t[0]
+			else:
+				lang='es'
+				pagina=parametro
+		page=wikipedia.Page(wikipedia.Site(lang, 'wikipedia'), pagina)
 		msg=''
 		if page.exists():
 			if page.isRedirectPage():
-				msg=u"\"%s\": #REDIRECCIÓN [[%s]]" % (parametro, page.getRedirectTarget().title())
+				msg=u"\"%s\": #REDIRECT [[%s]]" % (parametro, page.getRedirectTarget().title())
 			elif page.isDisambig():
 				msg=u"\"%s\": Desambiguación" % (parametro)
 			else:
-				msg=u"\"%s\": %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()))
+				msg=u"\"%s\": %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis. Extraido de http://%s.wikipedia.org/wiki/%s" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()), lang, re.sub(' ', '_', page.title()))
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['all']['aliases']:
 		temp=[]
