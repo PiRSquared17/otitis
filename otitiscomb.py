@@ -226,16 +226,16 @@ def rankingLastXHours(c, channel, period=1):
 	wikipedia.output(sql)
 	os.system(sql)
 	f=open(filename, 'r')
-	c=0
+	cont=0
 	for l in f:
 		l=unicode(l, 'utf-8')
 		l=l[:len(l)-1]
-		if c==0:
-			c+=1
+		if cont==0:
+			cont+=1
 			continue
-		c+=1
+		cont+=1
 		t=l.split(';')
-		if c<=4:
+		if cont<=4:
 			output+=u'*%s* (%s), ' % (t[0], t[1])
 		else:
 			output+=u'%s (%s), ' % (t[0], t[1])
