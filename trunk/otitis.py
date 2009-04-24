@@ -24,6 +24,10 @@
 # contenido por wikiproyecto?
 # lag toolserver
 #poner retardo a comandos pesados
+#diff aleatorio
+#curiosidad aleatoria
+#visitas de un articulo
+
 
 """ External modules """
 """ Python modules """
@@ -109,6 +113,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['flames', 'flame', 'disc', 'discu', 'polvorin', u'polvorín'],
 			'description': u'Muestra las discusiones más activas en las últimas horas',
 			},
+		'global': {
+			'aliases': ['global', 'globalstats', 'globales'],
+			'description': u'Muestra estadísticas globales',
+			},
 		'juego': {
 			'aliases': ['juego', 'juegos', 'game', 'games'],
 			'description': u'Algunos juegos de frikis',
@@ -145,6 +153,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['vec', 'wp:vec'],
 			'description': u'Muestra información acerca de Wikipedia:Vandalismo en curso',
 			},
+		'visitas': {
+			'aliases': ['visitas', 'visit', 'visits', 'vis', 'v'],
+			'description': u'Muestra el número de visitas de cierta página. Está sujeto a la disponibilidad de http://stats.grok.se',
+			},
 		'all': {
 			'aliases': ['all', 'cmd', 'cmds', 'comando', 'comandos'],
 			'description': u'Muestra todos los comandos existentes',
@@ -155,7 +167,7 @@ def on_pubmsg_thread(self, c, e):
 			},
 		'author': {
 			'aliases': ['author', 'autor', 'creador'],
-			'description': u'Muestra información sobre mi(s) creador(es)',
+			'description': u'Muestra información sobre el creador de Otitis',
 			},
 	}
 	
@@ -287,7 +299,7 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"Error: ese idioma no existe"
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['author']['aliases']:
-		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Bugs: Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
+		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['cab']['aliases']:
 		cabtemplate=wikipedia.Page(otitisglobals.preferences['site'], u'Plantilla:ResumenCandidaturasBibliotecario')
@@ -326,9 +338,8 @@ def on_pubmsg_thread(self, c, e):
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['efem']['aliases']:
-		mes={1:'enero', 2:'febrero', 3:'marzo', 4:'abril', 5:'mayo', 6:'junio', 7:'julio'}
 		fecha=datetime.datetime.today()
-		diames=u'%s de %s' % (fecha.day, mes[fecha.month])
+		diames=u'%s de %s' % (fecha.day, otitiscomb.number2month(fecha.month))
 		msg=u""
 		efempage=wikipedia.Page(otitisglobals.preferences['site'], diames)
 		m=re.compile(ur'(?im)^\* *(?P<line>\[\[\d+\]\].*?)$').finditer(efempage.get().split('==')[2])
@@ -360,6 +371,8 @@ def on_pubmsg_thread(self, c, e):
 		if msg:
 			msg+=u'...'
 			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['global']['aliases']:
+		otitiscomb.getGlobalStats(c, self.channel)
 	elif cmd in cmds['lemario']['aliases']:
 		msg=""
 		encarta=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:ProgresoLemario")
@@ -376,9 +389,8 @@ def on_pubmsg_thread(self, c, e):
 		if parametro>365 or parametro<-365:
 			msg=u"El parámetro debe estar entre -365 y 365, ambos inclusive. Por ejemplo: !mant -2 para el mantenimiento de anteayer"
 		else:
-			mes={1:'enero', 2:'febrero', 3:'marzo', 4:'abril', 5:'mayo', 6:'junio', 7:'julio'}
 			fecha=datetime.datetime.today()+datetime.timedelta(days=parametro)
-			diames=u'%s de %s' % (fecha.day, mes[fecha.month])
+			diames=u'%s de %s' % (fecha.day, number2month(fecha.month))
 			mantcat=catlib.Category(otitisglobals.preferences['site'], u'Categoría:Wikipedia:Mantenimiento:%s' % diames)
 			
 			mantnum=len(mantcat.articlesList())
@@ -390,14 +402,14 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['rank']['aliases']:
 		parametro=24
-		msg=u""
+		error=u""
 		if len(args)>=2:
 			parametro=int(args[1])
 		if parametro>=1 and parametro<=72:
-			msg=otitiscomb.rankingLastXHours(parametro)
+			otitiscomb.rankingLastXHours(c, self.channel, parametro)
 		else:
-			msg=u"El periodo debe estar entre 1 y 72 horas, ambos inclusive"
-		if msg:
+			error=u"El periodo debe estar entre 1 y 72 horas, ambos inclusive"
+		if error:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['juego']['aliases']:
 		parametro=1
@@ -426,20 +438,45 @@ def on_pubmsg_thread(self, c, e):
 				parametro=int(args[1])
 			except:
 				pass
-		if not otitisglobals.trivial:
+		if False and not otitisglobals.trivial:
 			otitiscomb.trivial(parametro, c, self.channel)
-		#c.privmsg(self.channel, msg.encode('utf-8'))
-	elif cmd in cmds['vec']['aliases']:
-		vecpage=wikipedia.Page(otitisglobals.preferences['site'], u'Wikipedia:Vandalismo en curso')
-		m=re.compile(ur'(?i)a rellenar por un bibliotecario').finditer(vecpage.get())
-		cont=0
-		for i in m:
-			cont+=1
-		if cont>0:
-			msg=u"*Hay %d informes* de vandalismo en curso sin analizar. Por favor, vigila http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso" % cont
-		else:
-			msg=u"*No hay informes* de vandalismo en curso sin analizar. Todo en orden en http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso"
+		msg=u"Trivial desactivado para evitar flooding"
 		c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['vec']['aliases']:
+		otitiscomb.checkVEC(c, self.channel)
+	elif cmd in cmds['visitas']['aliases']:
+		#<li class="sent bar" style="height: 280px; left: 400px;"><p style="margin-left: -3px;">3</p></li>
+		parametro=u""
+		msg=u""
+		error=u""
+		day=datetime.datetime.today().day
+		month=datetime.datetime.today().month
+		if len(args)>=2:
+			parametro=' '.join(args[1:])
+		if parametro:
+			try:
+				url='http://stats.grok.se/es/%s/%s' % (datetime.datetime.now().strftime('%Y%m'), re.sub(' ', '_', parametro))
+				f=urllib.urlopen(url, 'r')
+				m=re.compile(ur"(?i)<li class=\"sent bar\" style=\"height: \d+px; left: \d+px;\"><p style=\"margin-left: \-?\d+px;\">(?P<visits>[\d\.k]+)</p></li>").finditer(f.read())
+				cont=0
+				for i in m:
+					cont+=1
+					if cont in [day-3, day-2, day-1]:
+						visitas=i.group('visits')
+						visitas=re.sub(ur'\.', ur'', visitas)
+						visitas=re.sub(ur'(?i)k', ur'000', visitas)
+						visitas=re.sub(ur'(?i)m', ur'000000', visitas)
+						msg+=u"%d de %s (%s), " % (cont, otitiscomb.number2month(month), visitas)
+				f.close()
+			except:
+				error=u"Hubo un error al leer la página de estadísticas"
+		else:
+			error=u"Introduzca un nombre de página. Puedes ver estadísticas de visitas en http:/stats.grok.se"
+		if msg:
+			msg=u"Hoy es %s de %s. Visitas a \"%s\" en los últimos días: %s..." % (day, otitiscomb.number2month(month), parametro, msg)
+			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif error:
+			c.privmsg(self.channel, error.encode('utf-8'))
 	elif cmd in cmds['help']['aliases']:
 		parametro="help"
 		msg=u""
@@ -468,8 +505,6 @@ class BOT(SingleServerIRCBot):
 	""" BOT class """
 	
 	def __init__(self):
-		"""  """
-		"""  """
 		self.channel       = otitisglobals.preferences['channel']
 		self.nickname      = otitisglobals.preferences['nickname']
 		SingleServerIRCBot.__init__(self, [(otitisglobals.preferences['network'], otitisglobals.preferences['port'])], self.nickname, self.nickname)
@@ -478,6 +513,7 @@ class BOT(SingleServerIRCBot):
 		""" Se une al canal de IRC de Cambios recientes """
 		""" Joins to IRC channel with Recent changes """
 		
+		thread.start_new_thread(otitiscomb.periodicFunctions,(c, self.channel,))
 		c.join(self.channel)
 	
 	def on_privmsg(self, c, e):
