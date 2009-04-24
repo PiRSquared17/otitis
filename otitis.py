@@ -414,12 +414,18 @@ def on_pubmsg_thread(self, c, e):
 				if len(tt)>0:
 					pregunta=t[0]
 					respuestas=tt
-					if len(pregunta)>10 and len(respuestas[0])>2:
+					if len(pregunta)>10 and len(respuestas[0])>=2:
 						otitiscomb.saveQuestion(pregunta, respuestas)
-						msg=u"Pregunta guardada con éxito. Ahora hay %d preguntas en el wikitrivial. Inicialo con !trivial" % (len(otitiscomb.loadQuestions()))
+						time.sleep(3)
+						msg=u"Pregunta guardada con éxito. Ahora hay %d preguntas en el wikitrivial. Inícialo con !trivial" % (len(otitiscomb.loadQuestions()))
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['trivial']['aliases']:
-		parametro=3
+		parametro=10
+		if len(args)>1:
+			try:
+				parametro=int(args[1])
+			except:
+				pass
 		if not otitisglobals.trivial:
 			otitiscomb.trivial(parametro, c, self.channel)
 		#c.privmsg(self.channel, msg.encode('utf-8'))
