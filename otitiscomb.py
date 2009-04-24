@@ -24,6 +24,7 @@ import random
 import sys
 import urllib
 import os
+import thread
 
 # Otitis modules
 import otitisglobals
@@ -96,6 +97,11 @@ def getParameters():
 		wikipedia.output(u"Not all obligatory parameters were found. Please, check (*) parameters.")
 		sys.exit()
 
+def number2month(month):
+	months={1:'enero', 2:'febrero', 3:'marzo', 4:'abril', 5:'mayo', 6:'junio', 7:'julio', 8:'agosto', 9:'septiembre', 10:'octubre', 11:'noviembre', 12:'diciembre'}
+	
+	return months[month]
+
 def loadUserEdits(author, lang, family):
 	""" Carga número de ediciones de un usuario en concreto """
 	""" Load user edits number """
@@ -153,7 +159,9 @@ def loadLanguages():
 	m=re.compile(ur'http://(?P<lang>[a-z\-]+)\.wikipedia\.org').finditer(raw)
 	l=[]
 	for i in m:
-		l.append(i.group('lang'))
+		lang=i.group('lang')
+		if lang not in ['www',] and not lang in l:
+			l.append(lang)
 	l.sort()
 	return l
 
@@ -208,7 +216,7 @@ def getProjectStats(lang, family):
 		return stats
 	return stats
 
-def rankingLastXHours(period):
+def rankingLastXHours(c, channel, period=1):
 	output=u"Editores prolíficos de las últimas %d horas: " % period
 	filename='temp.txt'
 	now=datetime.datetime.now().strftime('%Y%m%d%H%M%S')
@@ -234,7 +242,7 @@ def rankingLastXHours(period):
 	f.close()
 	output+=u'... (Sujeto al lag de Toolserver: http://es.wikipedia.org/wiki/Plantilla:Toolserver)'
 	
-	return output
+	c.privmsg(channel, output.encode('utf-8'))
 
 def game1():
 	pass
@@ -359,3 +367,83 @@ def trivial(parametro, c, channel):
 	time.sleep(2)
 	fin=u"@@ La partida de wikitrivial ha finalizado @@"
 	c.privmsg(channel, fin.encode('utf-8'))
+
+def checkVEC(c, channel, limit=0):
+	vecpage=wikipedia.Page(otitisglobals.preferences['site'], u'Wikipedia:Vandalismo en curso')
+	m=re.compile(ur'(?i)a rellenar por un bibliotecario').finditer(vecpage.get())
+	cont=0
+	for i in m:
+		cont+=1
+	if cont>=limit:
+		if cont>0:
+			msg=u"*Hay %d informes* de vandalismo en curso sin analizar. Por favor, vigila http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso" % cont
+		else:
+			msg=u"*No hay informes* de vandalismo en curso sin analizar. Todo en orden en http://es.wikipedia.org/wiki/Wikipedia:Vandalismo_en_curso"
+		c.privmsg(channel, msg.encode('utf-8'))
+
+def periodicFunctions(c, channel):
+	timer1=timer2=time.time()
+	
+	while True:
+		if time.time()-timer1>60*5:
+			checkVEC(c, channel, 3)
+			timer1=time.time()
+		if time.time()-timer2>60*60:
+			rankingLastXHours(c, channel, 1)
+			timer2=time.time()
+		
+		time.sleep(1)
+
+def getWikipediaStats(lang):
+	dic={}
+	
+	try:
+		url=urllib.urlopen('http://%s.wikipedia.org/wiki/Special:Statistics?action=raw' % lang)
+		raw=url.read()
+		trozos=raw.split(';')
+		for trozo in trozos:
+			trozos2=trozo.split('=')
+			dic[trozos2[0]]=int(trozos2[1])
+		url.close()
+		otitisglobals.globalStats['+1'][lang]=dic
+		
+		for k, v in otitisglobals.globalStats['+1'][lang].items():
+			if otitisglobals.globalStats['+1']['global'].has_key(k):
+				otitisglobals.globalStats['+1']['global'][k]+=v
+			else:
+				otitisglobals.globalStats['+1']['global'][k]=v
+	except:
+		print 'error en %s' % lang
+	
+	otitisglobals.globalStats['+1']['cont']-=1
+
+
+def getGlobalStats(c, channel):
+	#total=16546867;good=2853216;views=63208805;edits=301818989;users=9503123;activeusers=158084;admins=1647;images=845544;jobs=6967 
+	msg=u""
+	otitisglobals.globalStats['+1']={'global':{},'cont':len(otitisglobals.preferences['wikilangs'])}
+	for lang in otitisglobals.preferences['wikilangs']:
+		#print lang
+		thread.start_new_thread(getWikipediaStats,(lang,))
+		time.sleep(0.01)
+	otitisglobals.globalStats['+1']['time']=time.time()
+	
+	temp=time.time()
+	while time.time()-temp<30 and otitisglobals.globalStats['+1']['cont']!=0:
+		print 'quedan %d valores por devolver' % otitisglobals.globalStats['+1']['cont']
+		time.sleep(1)
+	
+	#if otitisglobals.globalStats['0']:
+	#	msg=u"Estadísticas globales (crecimiento en %.1f segundos): " % (time.time()-otitisglobals.globalStats['0']['time'])
+	#	for k, v in otitisglobals.globalStats['+1']['global'].items():
+	#		msg+=u"%s (%d, +%d), " % (k, otitisglobals.globalStats['0']['global'][k], v-otitisglobals.globalStats['0']['global'][k])
+	#else:
+		msg=u"Estadísticas globales (%d proyectos): " % len(otitisglobals.preferences['wikilangs'])
+		for k, v in otitisglobals.globalStats['+1']['global'].items():
+			msg+=u"%s (%d), " % (k, otitisglobals.globalStats['+1']['global'][k])
+	
+	msg+=u"..."
+	c.privmsg(channel, msg.encode('utf-8'))
+	
+	otitisglobals.globalStats['0']=otitisglobals.globalStats['+1']
+	otitisglobals.globalStats['+1']={}
