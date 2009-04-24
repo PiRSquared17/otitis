@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # Otitis - IRC bot for Wikimedia projects
-# Copyright (C) 2008 Emilio José Rodríguez Posada
+# Copyright (C) 2009 Emilio José Rodríguez Posada
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
