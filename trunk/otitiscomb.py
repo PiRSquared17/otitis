@@ -111,9 +111,9 @@ def loadUserEdits(author, lang, family):
 			for i in m:
 				return int(i.group('editcount'))
 		else:
-			return 0
+			return -1
 	except:
-		return 0
+		return -1
 
 def existsLanguage(lang):
 	return lang.lower() in otitisglobals.preferences['wikilangs']
@@ -160,14 +160,17 @@ def loadLanguages():
 def getFirstLastEditInfo(user, lang, family, dir):
 	article=timestamp=''
 	user_=re.sub(' ', '_', user)
-	raw=otitisglobals.preferences['site'].getUrl('/w/index.php?title=Especial:Contribuciones%s&limit=1&target=%s' % (dir, user_.encode('utf-8')))
-	m=re.compile(ur'(\d\d:\d\d \d+ (ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic) \d\d\d\d)').finditer(raw)
+	site=wikipedia.Site(lang, family)
+	raw=site.getUrl('/w/index.php?title=Special:Contributions%s&limit=1&target=%s' % (dir, user_.encode('utf-8')))
+	m=re.compile(ur'(?P<timestamp>\d\d:\d\d \d+ (ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic) \d\d\d\d)').finditer(raw)
 	for i in m:
-		timestamp=i.group(1)
+		if not timestamp:
+			timestamp=i.group('timestamp')
 	
-	m=re.compile(ur'<a href="/wiki/[^\"]+?" title="(?P<article>[^>]+?)">\1</a>').finditer(raw)
+	m=re.compile(ur'\;action\=history\" title="(?P<article>[^>]+?)">').finditer(raw)
 	for i in m:
-		article=i.group('article')
+		if not article:
+			article=i.group('article')
 	
 	return article, timestamp
 	
@@ -182,13 +185,15 @@ def getDateTimeObject(date):
 	months={'ene':1, 'feb': 2, 'mar': 3, 'abr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'ago': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12}
 	
 	t=date.split(' ')
-	year=int(t[3])
-	month=int(months[t[2]])
-	day=int(t[1])
-	hour=int(t[0][0:2])
-	minute=int(t[0][3:5])
-	
-	return datetime.datetime(year, month, day, hour, minute)
+	if len(t)==4:
+		year=int(t[3])
+		month=int(months[t[2]])
+		day=int(t[1])
+		hour=int(t[0][0:2])
+		minute=int(t[0][3:5])
+		return datetime.datetime(year, month, day, hour, minute)
+	else:
+		return datetime.datetime.now()
 
 def getProjectStats(lang, family):
 	stats={}
@@ -204,7 +209,7 @@ def getProjectStats(lang, family):
 	return stats
 
 def rankingLastXHours(period):
-	output=u"Editores prolíficos de las últimas _%d horas_: " % period
+	output=u"Editores prolíficos de las últimas %d horas: " % period
 	filename='temp.txt'
 	now=datetime.datetime.now().strftime('%Y%m%d%H%M%S')
 	lastxhours=datetime.datetime.now()-datetime.timedelta(hours=period)
@@ -222,7 +227,7 @@ def rankingLastXHours(period):
 			continue
 		c+=1
 		t=l.split(';')
-		if c<=3:
+		if c<=4:
 			output+=u'*%s* (%s), ' % (t[0], t[1])
 		else:
 			output+=u'%s (%s), ' % (t[0], t[1])
@@ -234,7 +239,7 @@ def rankingLastXHours(period):
 def game1():
 	pass
 
-def launchGame(parametro, c, self.channel):
+def launchGame(parametro, c, channel):
 	return game1()
 
 def getNewPagesLastXHours(lang, family, period):

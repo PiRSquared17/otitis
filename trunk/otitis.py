@@ -100,6 +100,10 @@ class BOT(SingleServerIRCBot):
 				'aliases': ['ainfo', 'pageinfo'],
 				'description': u'Muestra información sobre una página',
 				},
+			'cab': {
+				'aliases': ['cab', 'cabs', 'rfa'],
+				'description': u'Muestra información sobre las Candidaturas a bibliocario en curso',
+				},
 			'compare': {
 				'aliases': ['compare', 'comp', 'compara'],
 				'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
@@ -116,9 +120,21 @@ class BOT(SingleServerIRCBot):
 				'aliases': ['efem', 'efe', 'efeme', 'efemerides', 'galletita'],
 				'description': u'Muestra una efeméride para el día actual',
 				},
+			'encarta': {
+				'aliases': ['encarta', 'enc', 'progresoencarta', 'pencarta', 'penc'],
+				'description': u'Muestra cuántos artículos de la Encarta tenemos',
+				},
+			'flames': {
+				'aliases': ['flames', 'flame', 'disc', 'discu', 'polvorin', u'polvorín'],
+				'description': u'Muestra las discusiones más activas en las últimas horas',
+				},
 			'juego': {
 				'aliases': ['juego', 'juegos', 'game', 'games'],
 				'description': u'Algunos juegos de frikis',
+				},
+			'lemario': {
+				'aliases': ['lemario', 'lem', 'progresolemario'],
+				'description': u'Muestra cuántas palabras del idioma español tenemos',
 				},
 			'mant': {
 				'aliases': ['mant', 'mantenimiento'],
@@ -184,37 +200,58 @@ class BOT(SingleServerIRCBot):
 					family=otitiscomb.translateFamily(t[0])
 			else:
 				user=t[0]
+			
+			if not lang:
 				lang='es'
+			if not family:
 				family='wikipedia'
 			
 			msg=u""
-			error=u"Has cometido un error. El formato adecuado es: !info usuario, !info idioma:usuario, !info proyecto:usuario o !info idioma:proyecto:usuario"
+			error=u""
 			
 			if lang:
 				if family:
 					if not user:
 						user=nick
 					ediciones=otitiscomb.loadUserEdits(user, lang, family)
-					if ediciones!=0:
+					if ediciones>=0:
+						msg+=u"\"%s:%s:User:%s\" tiene %d ediciones." % (lang, family, user, ediciones)
 						[primeraArticulo, primeraFecha]=otitiscomb.getFirstEditInfo(user, lang, family)
 						[ultimaArticulo, ultimaFecha]=otitiscomb.getLastEditInfo(user, lang, family)
-						primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
-						ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
-						edad=datetime.datetime.now()-primeraFechaObject
+						media=0.0
+						edad_text=u''
+						if primeraFecha and ultimaFecha:
+							primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
+							ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
+							edad=datetime.datetime.now()-primeraFechaObject
+							edad_text=u'%s días' % edad.days
+							media=ediciones*1.0/int(edad.days)
+							msg+=u" Primera: \"%s\" (Fecha: %s). Última: \"%s\" (Fecha: %s). Edad: %s (%.1f ediciones/día)." % (primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad_text, media)
 						grupos=""
+						#hacer función busca grupos
+						if grupos:
+							msg+=u" Grupos: %s." % grupos
 						ranking=""
-						rankingpage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de ediciones')
-						m=re.compile(ur"(?im)^\| (?P<position>\d+) \|\| \[\[User:%s\|%s\]\]" % (user, user)).finditer(rankingpage.get())
-						for i in m:
-							ranking=i.group('position')
-						if not ranking:
-							ranking=u">500"
-						msg=u"\"%s:%s:User:%s\" tiene %d ediciones. Primera: \"%s\" (%s). Última: \"%s\" (%s). Edad: %s días. Ediciones/día: %.1f. Grupos: %s. Puesto en el ranking de ediciones: *%s*. Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, user, ediciones, primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad.days, ediciones*1.0/int(edad.days), grupos, ranking, lang, family, re.sub(ur' ', ur'_', user))
+						if lang=='es':
+							rankingpage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de ediciones')
+							m=re.compile(ur"(?im)^\| (?P<position>\d+) \|\| \[\[User:%s\|%s\]\]" % (user, user)).finditer(rankingpage.get())
+							for i in m:
+								ranking=i.group('position')
+							if not ranking:
+								ranking=u">500"
+						if ranking:
+							msg+=u" Puesto en el ranking de ediciones: *%s*." % ranking
+						msg+=u" Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, re.sub(ur' ', ur'_', user))
+					else:
+						error+=u"Ese usuario no existe."
 				else:
-					msg=error
+					error+=u"Esa familia no existe. "
 			else:
-				msg=error
-			c.privmsg(self.channel, msg.encode('utf-8'))
+				error+=u"Ese idioma no existe. "
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
+			elif error:
+				c.privmsg(self.channel, error.encode('utf-8'))
 		elif cmd in cmds['ainfo']['aliases']:
 			parametro='Wikipedia:Portada'
 			if len(args)>=2:
@@ -261,8 +298,15 @@ class BOT(SingleServerIRCBot):
 				msg=u"Error: ese idioma no existe"
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['author']['aliases']:
-			msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation)"
+			msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Bugs: Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
 			c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['cab']['aliases']:
+			cabtemplate=wikipedia.Page(otitisglobals.preferences['site'], u'Plantilla:ResumenCandidaturasBibliotecario')
+			#| 1 || [[Usuario:Nicop|Nicop]] || [[Wikipedia:Candidaturas a bibliotecario/Nicop|Ver]] || 72 || 2 || style='background-color:#D0F0C0;' | 97% 
+			m=re.compile(ur"(?im)^\| *\d+ \|\| *\[\[Usuario\:(?P<user>[^\|]*?)\|[^\]]+?\]\] *\|\| *\[\[(?P<cab>.+?)\|Ver\]\] *\|\| *(?P<afavor>\d+) *\|\| *(?P<encontra>\d+) *\|\|[^\|]+?\| *(?P<porcentaje>[\d\.]+)").finditer(cabtemplate.get())
+			for i in m:
+				msg=u"\"User:%s\": A favor (%s), En contra (%s), Porcentaje favorables (%s%%). Detalles: http://es.wikipedia.org/wiki/%s" % (i.group('user'), i.group('afavor'), i.group('encontra'), i.group('porcentaje'), re.sub(' ', '_', i.group('cab')))
+				c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['compare']['aliases']:
 			parametro='Wikipedia:Portada'
 			if len(args)>=2:
@@ -307,6 +351,32 @@ class BOT(SingleServerIRCBot):
 				selected=re.sub(ur'\[\[([^\|]*?)\|([^\]]*?)\]\]', ur'\2', selected)
 				selected=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', selected)
 				msg=u"Un día como hoy: %s (Extraido de http://es.wikipedia.org/wiki/%s)" % (selected, re.sub(' ', '_',efempage.title()))
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['encarta']['aliases']:
+			msg=""
+			encarta=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:ProgresoEncarta")
+			m=re.compile(ur"Total\: *(?P<total>[\d\.]+?)\%").finditer(encarta.get())
+			for i in m:
+				msg=u"Progreso Encarta: Tenemos el *%s%%* de los artículos de /Enciclopedia Encarta/. Detalles: http://es.wikipedia.org/wiki/Plantilla:ProgresoEncarta" % (i.group('total'))
+			if msg:
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['flames']['aliases']:
+			msg="Discusiones muy activas: "
+			flames=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:DiscusionesActivas")
+			#| [[Discusión:Día de la Tierra|Día de la Tierra]] || [http://es.wikipedia.org/w/index.php?title=Discusión:Día_de_la_Tierra&action=history 20] 
+			m=re.compile(ur"(?im)^\| *\[\[(?P<discu>[^\|]+?)\|[^\]]+?\]\] *\|\| *.*?\=history *(?P<edits>\d+)\]").finditer(flames.get())
+			for i in m:
+				msg+=u"http://es.wikipedia.org/wiki/%s (%s), " % (re.sub(' ', '_', i.group('discu')), i.group('edits'))
+			if msg:
+				msg+=u'...'
+				c.privmsg(self.channel, msg.encode('utf-8'))
+		elif cmd in cmds['lemario']['aliases']:
+			msg=""
+			encarta=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:ProgresoLemario")
+			m=re.compile(ur"Total\: *(?P<total>[\d\.]+?)\%").finditer(encarta.get())
+			for i in m:
+				msg=u"Progreso Lemario: Tenemos el *%s%%* de las palabras del idioma español. Detalles: http://es.wikipedia.org/wiki/Plantilla:ProgresoLemario" % (i.group('total'))
 			if msg:
 				c.privmsg(self.channel, msg.encode('utf-8'))
 		elif cmd in cmds['mant']['aliases']:
@@ -365,7 +435,6 @@ class BOT(SingleServerIRCBot):
 					msg=u"Comando '!%s': %s. Redirecciones de este comando son: !%s" % (parametro, cmds[parametro]['description'], ', !'.join(cmds[parametro]['aliases']))
 				else:
 					error=u"Comando desconocido"
-				c.privmsg(self.channel, msg.encode('utf-8'))
 			else:
 				if cmds.has_key(parametro):
 					msg=u"%s" % (cmds[parametro]['description'])
