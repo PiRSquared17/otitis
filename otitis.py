@@ -449,6 +449,7 @@ def on_pubmsg_thread(self, c, e):
 		parametro=u""
 		msg=u""
 		error=u""
+		url=''
 		day=datetime.datetime.today().day
 		month=datetime.datetime.today().month
 		if len(args)>=2:
@@ -473,7 +474,7 @@ def on_pubmsg_thread(self, c, e):
 		else:
 			error=u"Introduzca un nombre de página. Puedes ver estadísticas de visitas en http:/stats.grok.se"
 		if msg:
-			msg=u"Hoy es %s de %s. Visitas a \"%s\" en los últimos días: %s..." % (day, otitiscomb.number2month(month), parametro, msg)
+			msg=u"Hoy es %s de %s. Visitas a \"%s\" en los últimos días: %s... Extraido de: %s" % (day, otitiscomb.number2month(month), parametro, msg, url)
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif error:
 			c.privmsg(self.channel, error.encode('utf-8'))
