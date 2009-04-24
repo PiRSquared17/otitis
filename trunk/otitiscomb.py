@@ -256,4 +256,106 @@ def getNewPagesLastXHours(lang, family, period):
 		pass
 	
 	return cont-1
+
+def loadQuestions():
+	f=open('trivial.txt', 'r')
+	qa=[]
+	cont=0
+	for l in f:
+		if cont==0:
+			cont+=1
+			continue
+		l=unicode(l, 'utf-8')
+		l=l[:len(l)-1] #quitamos \n
+		t=l.split(';;')
+		if len(t)==2:
+			tt=t[1].split(';')
+			if len(tt)>0:
+				pregunta=t[0]
+				respuestas=[]
+				for i in tt:
+					respuestas.append(i.lower())
+				if len(pregunta)>10 and len(respuestas[0])>2:
+					qa.append([pregunta, respuestas])
+	f.close()
+	return qa
+
+def saveQuestion(question, answers):
+	f=open('trivial.txt', 'a')
+	line=u"%s;;%s\n" % (question, ';'.join(answers))
+	f.write(line.encode('utf-8'))
+	f.close()
 	
+	#backup
+	f=open('trivial.txt', 'r')
+	g=open('trivial_backup.txt', 'w')
+	g.write(f.read())
+	f.close()
+	g.close()
+
+def trivial(parametro, c, channel):
+	sleep=15 #segundos para responder
+	otitisglobals.trivial=True
+	inicio=u"@@ Comenzando una partida de wikitrivial (%d preguntas) @@" % parametro
+	c.privmsg(channel, inicio.encode('utf-8'))
+	time.sleep(2)
+	inicio2=u"@@ Recuerda que las respuestas no son sensibles a mAyúScuLaS pero sí a acentos @@"
+	c.privmsg(channel, inicio2.encode('utf-8'))
+	
+	preguntas=loadQuestions()
+	preguntas_hechas=[]
+	puntuaciones={}
+	
+	for i in range(0, parametro):
+		time.sleep(4)
+		timer=time.time() #temporizador
+		rand=random.randint(0, len(preguntas)-1) #id para pregunta aleatoria
+		while rand in preguntas_hechas:
+			rand=random.randint(0, len(preguntas)-1) #id para pregunta aleatoria
+		preguntas_hechas.append(rand)
+		pregunta=u"@@ *Pregunta:* %s @@" % (preguntas[rand][0])
+		otitisglobals.trivialTimer=time.time()
+		otitisglobals.trivialAnswers=preguntas[rand][1]
+		c.privmsg(channel, pregunta.encode('utf-8'))
+		tiempo_respuesta=0
+		while time.time()-timer<sleep:
+			if otitisglobals.trivialAnswerWinner:
+				tiempo_respuesta=time.time()-timer
+				respuesta=u"@@ ¡%s ha acertado en %.2f segundos! Las respuestas posibles eran: %s @@" % (otitisglobals.trivialAnswerWinner, tiempo_respuesta, ', '.join(preguntas[rand][1]))
+				c.privmsg(channel, respuesta.encode('utf-8'))
+				break
+			time.sleep(0.1) #cada cuanto hacer una iteración del bucle
+		
+		puntos=sleep*1.0-tiempo_respuesta #calculo de puntos, por ahora va que chuta con esto, cuanto menos tarde más puntos da
+		if otitisglobals.trivialAnswerWinner:
+			if puntuaciones.has_key(otitisglobals.trivialAnswerWinner):
+				puntuaciones[otitisglobals.trivialAnswerWinner]+=puntos #puntos según tiempo de respuesta
+			else:
+				puntuaciones[otitisglobals.trivialAnswerWinner]=puntos
+			otitisglobals.trivialAnswerWinner=u""
+		else:
+			respuesta=u"@@ Las respuestas posibles eran: %s @@" % (', '.join(preguntas[rand][1]))
+			c.privmsg(channel, respuesta.encode('utf-8'))
+		
+	
+	otitisglobals.trivial=False
+	resumen=u"@@ Podium: "
+	temp=[]
+	for k, v in puntuaciones.items():
+		temp.append([v, k])
+	temp.sort()
+	temp.reverse()
+	max=len(temp)
+	if max>10:
+		max=10
+	for i in range(0,max):
+		if i==0:
+			resumen+=u" *%s* (%.2f), " % (temp[i][1], temp[i][0])
+		else:
+			resumen+=u" %s (%.2f), " % (temp[i][1], temp[i][0])
+	resumen+=u"... @@"
+	time.sleep(2)
+	c.privmsg(channel, resumen.encode('utf-8'))
+	time.sleep(2)
+	fin=u"@@ La partida de wikitrivial ha finalizado @@"
+	c.privmsg(channel, fin.encode('utf-8'))
