@@ -166,11 +166,15 @@ def loadLanguages():
 	return l
 
 def getFirstLastEditInfo(user, lang, family, dir):
-	article=timestamp=''
+	article=timestamp=diff=''
 	user_=re.sub(' ', '_', user)
 	site=wikipedia.Site(lang, family)
 	raw=site.getUrl('/w/index.php?title=Special:Contributions%s&limit=1&target=%s' % (dir, user_.encode('utf-8')))
-	m=re.compile(ur'(?P<timestamp>\d\d:\d\d \d+ (ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic) \d\d\d\d)').finditer(raw)
+	m=""
+	if lang=='es':
+		m=re.compile(ur'(?i)(?P<timestamp>\d\d:\d\d \d+ (ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic) \d\d\d\d)').finditer(raw)
+	elif lang=='en':
+		m=re.compile(ur'(?i)(?P<timestamp>\d\d:\d\d\, \d+ (january|february|march|april|may|june|july|august|september|october|november|december) \d\d\d\d)').finditer(raw)
 	for i in m:
 		if not timestamp:
 			timestamp=i.group('timestamp')
@@ -180,7 +184,12 @@ def getFirstLastEditInfo(user, lang, family, dir):
 		if not article:
 			article=i.group('article')
 	
-	return article, timestamp
+	m=re.compile(ur'oldid\=(?P<diff>\d+)\" title\=\"[^\>]+?\"\>diff\<\/a\>').finditer(raw)
+	for i in m:
+		if not diff:
+			diff=i.group('diff')
+	
+	return article, timestamp, diff
 	
 def getFirstEditInfo(user, lang, family):
 	return getFirstLastEditInfo(user, lang, family, '&dir=prev')
@@ -447,3 +456,17 @@ def getGlobalStats(c, channel):
 	
 	otitisglobals.globalStats['0']=otitisglobals.globalStats['+1']
 	otitisglobals.globalStats['+1']={}
+
+def famousEditor(famous, c, channel):
+	salve=[u'El Unicornio Rosa Invisible', u'El Monstruo de Espagueti Volador', u'La Tetera de Russell', u'Chuck Norris']
+	msg=u""
+	[article, timestamp, diff]=getLastEditInfo(famous, 'en', 'wikipedia')
+	msg=u"¡%s salve a %s! Su última edición fue realizada el %s en \"en:%s\", http://en.wikipedia.org/w/index.php?diff=prev&oldid=%s. Extraido de: http://en.wikipedia.org/wiki/Special:Contributions/%s" % (salve[random.randint(0, len(salve))], famous, timestamp, article, diff, re.sub(' ', '_', famous))
+	if msg:
+		c.privmsg(channel, msg.encode('utf-8'))
+
+def cleanLinks(x):
+	x=re.sub(ur'\[\[([^\|]*?)\|([^\]]*?)\]\]', ur'\2', x)
+	x=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', x)
+	x=re.sub(ur'<a href[^>]+?>([^<]+?)</a>', ur'\1', x)
+	return x
