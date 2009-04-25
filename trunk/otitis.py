@@ -28,6 +28,10 @@
 # curiosidad aleatoria
 # parsear special pages (longpages...)
 # !info mostrar usuarios anterior y posterior al usuario en el ranking
+# !estimación actividad hoy
+# !cafe hilos + concurridos/nuevos
+# !jimbo
+# !maldoror
 
 """ External modules """
 """ Python modules """
@@ -85,6 +89,14 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['ainfo', 'pageinfo'],
 			'description': u'Muestra información sobre una página',
 			},
+		'angela': {
+			'aliases': ['angela', 'angelabeesley', 'beesley'],
+			'descripcion': u'Muestra información actual sobre Angela Beesley, co-fundadora de Wikia.com',
+			},
+		'brion': {
+			'aliases': ['brion', 'brionvibber', 'vibber'],
+			'descripcion': u'Muestra información actual sobre Brion Vibber, desarrollador de MediaWiki',
+			},
 		'cab': {
 			'aliases': ['cab', 'cabs', 'rfa'],
 			'description': u'Muestra información sobre las Candidaturas a bibliocario en curso',
@@ -121,6 +133,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['global', 'globalstats', 'globales'],
 			'description': u'Muestra estadísticas globales',
 			},
+		'jimbo': {
+			'aliases': ['jimbo', 'jimmy', 'jwales', 'wales', 'jimbowales', 'jimmywales'],
+			'descripcion': u'Muestra información actual sobre Jimbo Wales',
+			},
 		'juego': {
 			'aliases': ['juego', 'juegos', 'game', 'games'],
 			'description': u'Algunos juegos de frikis',
@@ -128,6 +144,10 @@ def on_pubmsg_thread(self, c, e):
 		'lemario': {
 			'aliases': ['lemario', 'lem', 'progresolemario'],
 			'description': u'Muestra cuántas palabras del idioma español tenemos',
+			},
+		'maldoror': {
+			'aliases': ['maldoror', 'maldo', 'mald', 'tanques', 'tanque'],
+			'description': u'Muestra un artículo creado por Maldoror, elegido aleatoriamente',
 			},
 		'mant': {
 			'aliases': ['mant', 'mantenimiento'],
@@ -144,6 +164,10 @@ def on_pubmsg_thread(self, c, e):
 		'stats': {
 			'aliases': ['stats', 'statistics'],
 			'description': u'Muestra algunas estadísticas de Wikipedia',
+			},
+		'tim': {
+			'aliases': ['tim', 'timstarling', 'starling'],
+			'descripcion': u'Muestra información actual sobre Tim Starling, desarrollador de MediaWiki, creador de las parserFunctions',
 			},
 		'time': {
 			'aliases': ['time', 'timestamp', 'hora'],
@@ -221,8 +245,8 @@ def on_pubmsg_thread(self, c, e):
 				ediciones=otitiscomb.loadUserEdits(user, lang, family)
 				if ediciones>=0:
 					msg+=u"\"%s:%s:User:%s\" tiene *%d* ediciones." % (lang, family, user, ediciones)
-					[primeraArticulo, primeraFecha]=otitiscomb.getFirstEditInfo(user, lang, family)
-					[ultimaArticulo, ultimaFecha]=otitiscomb.getLastEditInfo(user, lang, family)
+					[primeraArticulo, primeraFecha, diff]=otitiscomb.getFirstEditInfo(user, lang, family)
+					[ultimaArticulo, ultimaFecha, diff]=otitiscomb.getLastEditInfo(user, lang, family)
 					media=0.0
 					edad_text=u''
 					if primeraFecha and ultimaFecha:
@@ -287,6 +311,8 @@ def on_pubmsg_thread(self, c, e):
 		temp.sort()
 		msg=u"Comandos disponibles: !%s. Para saber más sobre ellos utiliza !help comando. Por ejemplo: !help info" % (', !'.join(temp))
 		c.notice(nick, msg.encode('utf-8'))
+	elif cmd in cmds['angela']['aliases']:
+		otitiscomb.famousEditor('Angela', c, self.channel)
 	elif cmd in cmds['art']['aliases']:
 		parametro='es'
 		if len(args)>=2:
@@ -314,6 +340,8 @@ def on_pubmsg_thread(self, c, e):
 	elif cmd in cmds['author']['aliases']:
 		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Código: http://code.google.com/p/otitis/. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
 		c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['brion']['aliases']:
+		otitiscomb.famousEditor('Brion VIBBER', c, self.channel)
 	elif cmd in cmds['cab']['aliases']:
 		cabtemplate=wikipedia.Page(otitisglobals.preferences['site'], u'Plantilla:ResumenCandidaturasBibliotecario')
 		#| 1 || [[Usuario:Nicop|Nicop]] || [[Wikipedia:Candidaturas a bibliotecario/Nicop|Ver]] || 72 || 2 || style='background-color:#D0F0C0;' | 97% 
@@ -371,8 +399,7 @@ def on_pubmsg_thread(self, c, e):
 			temp.append(i.group('line'))
 		if temp:
 			selected=temp[random.randint(0,len(temp))]
-			selected=re.sub(ur'\[\[([^\|]*?)\|([^\]]*?)\]\]', ur'\2', selected)
-			selected=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', selected)
+			selected=otitiscomb.cleanLinks(selected)
 			selected=re.sub(ur'\&nbsp\;', ur' ', selected)
 			msg=u"Un día como hoy: %s Extraido de http://es.wikipedia.org/wiki/%s" % (selected, re.sub(' ', '_',efempage.title()))
 		if msg:
@@ -397,12 +424,27 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['global']['aliases']:
 		otitiscomb.getGlobalStats(c, self.channel)
+	elif cmd in cmds['jimbo']['aliases']:
+		otitiscomb.famousEditor('Jimbo Wales', c, self.channel)
 	elif cmd in cmds['lemario']['aliases']:
 		msg=""
 		encarta=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:ProgresoLemario")
 		m=re.compile(ur"Total\: *(?P<total>[\d\.]+?)\%").finditer(encarta.get())
 		for i in m:
 			msg=u"Progreso Lemario: Tenemos el *%s%%* de las palabras del idioma español. Detalles: http://es.wikipedia.org/wiki/Plantilla:ProgresoLemario" % (i.group('total'))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['maldoror']['aliases']:
+		msg=u""
+		maldopage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de creaciones (sin redirecciones)/Maldoror/1')
+		links=maldopage.linkedPages()
+		linkselected=links[random.randint(0, len(links))]
+		linkhist=linkselected.getVersionHistory(forceReload=False, reverseOrder=True, getAll=True)
+		title=linkhist[0][1]
+		oldid=linkhist[0][0]
+		summary=linkhist[0][3]
+		summary=otitiscomb.cleanLinks(summary)
+		msg=u"Maldoror creó \"%s\" (%s) con el resumen: /%s/. Ver estado original: http://es.wikipedia.org/w/index.php?oldid=%s" % (linkselected.title(), title, summary, oldid)
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['mant']['aliases']:
@@ -455,6 +497,8 @@ def on_pubmsg_thread(self, c, e):
 						time.sleep(3)
 						msg=u"Pregunta guardada con éxito. Ahora hay %d preguntas en el wikitrivial. Inícialo con !trivial" % (len(otitiscomb.loadQuestions()))
 		c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['tim']['aliases']:
+		otitiscomb.famousEditor('Tim Starling', c, self.channel)
 	elif cmd in cmds['trivial']['aliases']:
 		parametro=10
 		if len(args)>1:
