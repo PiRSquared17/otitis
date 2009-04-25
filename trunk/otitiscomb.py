@@ -102,6 +102,15 @@ def number2month(month):
 	
 	return months[month]
 
+def month2number(month):
+	months={
+	'ene':1, 'feb': 2, 'mar': 3, 'abr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'ago': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12,
+	'january':1, 'february':2, 'march':3, 'april':4, 'may':5, 'june':6, 'july':7, 'august':8, 'september':9, 'october':10, 'november':11, 'december':12,
+	
+	}
+	
+	return months[month.lower()]
+
 def loadUserEdits(author, lang, family):
 	""" Carga número de ediciones de un usuario en concreto """
 	""" Load user edits number """
@@ -199,12 +208,10 @@ def getLastEditInfo(user, lang, family):
 
 def getDateTimeObject(date):
 	#02:13 4 ene 2003
-	months={'ene':1, 'feb': 2, 'mar': 3, 'abr': 4, 'may': 5, 'jun': 6, 'jul': 7, 'ago': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dic': 12}
-	
 	t=date.split(' ')
 	if len(t)==4:
 		year=int(t[3])
-		month=int(months[t[2]])
+		month=int(month2number(t[2]))
 		day=int(t[1])
 		hour=int(t[0][0:2])
 		minute=int(t[0][3:5])
