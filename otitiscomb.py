@@ -394,11 +394,11 @@ def periodicFunctions(c, channel):
 	timer1=timer2=time.time()
 	
 	while True:
-		if time.time()-timer1>60*5:
-			checkVEC(c, channel, 3)
+		if time.time()-timer1>60*10:
+			checkVEC(c, channel, 5)
 			timer1=time.time()
-		if time.time()-timer2>60*60:
-			rankingLastXHours(c, channel, 1)
+		if time.time()-timer2>60*60*2:
+			rankingLastXHours(c, channel, 2)
 			timer2=time.time()
 		
 		time.sleep(1)
