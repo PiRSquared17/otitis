@@ -30,8 +30,7 @@
 # !info mostrar usuarios anterior y posterior al usuario en el ranking
 # !estimación actividad hoy
 # !cafe hilos + concurridos/nuevos
-# !jimbo
-# !maldoror
+# última versión del código en !author
 
 """ External modules """
 """ Python modules """
@@ -217,15 +216,15 @@ def on_pubmsg_thread(self, c, e):
 		if len(t)>=3:
 			user=':'.join(t[2:])
 			for i in range(0,2):
-				if otitiscomb.existsLanguage(t[i]):
+				if otitiscomb.existsLanguage(t[i]) and not lang:
 					lang=t[i]
-				if otitiscomb.existsFamily(otitiscomb.translateFamily(t[i])):
+				elif otitiscomb.existsFamily(otitiscomb.translateFamily(t[i])) and not family:
 					family=otitiscomb.translateFamily(t[i])
 		elif len(t)==2:
 			user=':'.join(t[1:])
-			if otitiscomb.existsLanguage(t[0]):
+			if otitiscomb.existsLanguage(t[0]) and not lang:
 				lang=t[0]
-			if otitiscomb.existsFamily(otitiscomb.translateFamily(t[0])):
+			elif otitiscomb.existsFamily(otitiscomb.translateFamily(t[0])) and not family:
 				family=otitiscomb.translateFamily(t[0])
 		else:
 			user=t[0]
@@ -526,7 +525,7 @@ def on_pubmsg_thread(self, c, e):
 			parametro=' '.join(args[1:])
 		if parametro:
 			t=parametro.split(':')
-			if len(t)>1:
+			if len(t)>1 and otitiscomb.existsLanguage(t[0]):
 				pagina=':'.join(t[1:])
 				lang=t[0]
 			else:
