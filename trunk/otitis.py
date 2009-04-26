@@ -31,6 +31,13 @@
 # !estimación actividad hoy
 # !cafe hilos + concurridos/nuevos
 # última versión del código en !author
+# !fap !fapfap
+# !odd
+# !fetch que se salte las infoboxes
+# !old paginas viejas
+# !long
+# !new
+# !drae http://buscon.rae.es/draeI/SrvltGUIBusUsual?TIPO_HTML=2&LEMA=
 
 """ External modules """
 """ Python modules """
@@ -157,13 +164,13 @@ def on_pubmsg_thread(self, c, e):
 			'description': u'Añade una nueva pregunta al wikitrivial. El formato es: pregunta;;respuesta1;respuesta2;respuesta3... Las respuestas no son sensibles a mayúsculas o minúsculas',
 			},
 		'rank': {
-			'aliases': ['rank', 'ranking'],
-			'description': u'Muestra algunos rankings',
+			'aliases': ['rank', 'ranking', 'stat', 'stats', 'statistics'],
+			'description': u'Muestra los editores más prolíficos de las últimas X horas. Por ejemplo: !rank 24',
 			},
-		'stats': {
-			'aliases': ['stats', 'statistics'],
-			'description': u'Muestra algunas estadísticas de Wikipedia',
-			},
+		#'stats': {
+		#	'aliases': ['stats', 'statistics'],
+		#	'description': u'Muestra algunas estadísticas de Wikipedia',
+		#	},
 		'tim': {
 			'aliases': ['tim', 'timstarling', 'starling'],
 			'descripcion': u'Muestra información actual sobre Tim Starling, desarrollador de MediaWiki, creador de las parserFunctions',
@@ -193,7 +200,11 @@ def on_pubmsg_thread(self, c, e):
 			'description': u'Esta es la ayuda de Otitis. Para ver los comandos existentes escribe !all. Para saber más sobre un comando usa !help comando',
 			},
 		'author': {
-			'aliases': ['author', 'autor', 'creador'],
+			'aliases': ['author', 'autor', 'creador', 'creator'],
+			'description': u'Muestra información sobre el creador de un artículo',
+			},
+		'readme': {
+			'aliases': ['readme', 'leeme', 'acerca', 'acercade', 'about'],
 			'description': u'Muestra información sobre el creador de Otitis',
 			},
 	}
@@ -247,7 +258,7 @@ def on_pubmsg_thread(self, c, e):
 		page=wikipedia.Page(wikipedia.Site(lang, family), pagina)
 		msg=''
 		if page.exists():
-			pagina=':'.join(family, lang, pagina)
+			pagina=':'.join([family, lang, pagina])
 			if page.isRedirectPage():
 				msg=u"\"%s\": #REDIRECT \"%s\"" % (pagina, page.getRedirectTarget().title())
 			elif page.isDisambig():
@@ -289,8 +300,8 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"Error: ese idioma no existe"
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['author']['aliases']:
-		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Código: http://code.google.com/p/otitis/. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini"
-		c.privmsg(self.channel, msg.encode('utf-8'))
+		[lang, family, pagina]=otitiscomb.splitParameter('Main Page', args)
+		otitiscomb.whoisItsAuthor(lang, family, pagina, c, self.channel)
 	elif cmd in cmds['brion']['aliases']:
 		otitiscomb.famousEditor('Brion VIBBER', c, self.channel)
 	elif cmd in cmds['cab']['aliases']:
@@ -301,15 +312,21 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"\"User:%s\": A favor (%s), En contra (%s), Porcentaje favorables (%s%%). Detalles: http://es.wikipedia.org/wiki/%s" % (i.group('user'), i.group('afavor'), i.group('encontra'), i.group('porcentaje'), re.sub(' ', '_', i.group('cab')))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['compare']['aliases']:
-		[lang, family, pagina]=otitiscomb.splitParameter('Main Page', args)
+		[lang, family, pagina]=otitiscomb.splitParameter(u'Jimmy Wales', args)
 		page=wikipedia.Page(wikipedia.Site(lang, family), pagina)
 		msg=u''
 		if page.exists():
+			if page.isRedirectPage():
+				page=page.getRedirectTarget()
 			iws=page.interwiki()
+			iws.append(page)
 			iws.sort()
 			for iw in iws:
-				if iw.site().lang in ['en', 'fr', 'de', 'pt', 'it', 'ca', 'eu', 'pl', 'ru']:
-					msg+=u"\"%s:%s\" (%d bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
+				if iw.site().lang in ['en', 'fr', 'de', 'es', 'pt', 'it', 'ca', 'eu', 'pl', 'ru']:
+					if iw.site().lang==page.site().lang:
+						msg+=u"\"%s:%s\" (*%d* bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
+					else:
+						msg+=u"\"%s:%s\" (%d bytes), " % (iw.site().lang, iw.title(), len(iw.get()))
 		if msg:
 			msg+=u"..."
 			c.privmsg(self.channel, msg.encode('utf-8'))
@@ -340,7 +357,7 @@ def on_pubmsg_thread(self, c, e):
 		fecha=datetime.datetime.today()
 		diademes=u'%s de %s' % (fecha.day, otitiscomb.number2month(fecha.month))
 		[lang, family, pagina]=otitiscomb.splitParameter(diademes, args)
-		msg=u""
+		msg=error=u""
 		efempage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), pagina) #pillamos el es: y leugo saltamos al otro idioma si es necesario
 		if lang!='es':
 			iws=efempage.interwiki()
@@ -384,7 +401,7 @@ def on_pubmsg_thread(self, c, e):
 	elif cmd in cmds['global']['aliases']:
 		otitiscomb.getGlobalStats(c, self.channel)
 	elif cmd in cmds['jimbo']['aliases']:
-		otitiscomb.famousEditor('Jimbo Wales', c, self.channel)
+		otitiscomb.famousEditor(u'Jimbo Wales', c, self.channel)
 	elif cmd in cmds['lemario']['aliases']:
 		msg=""
 		encarta=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:ProgresoLemario")
@@ -398,14 +415,7 @@ def on_pubmsg_thread(self, c, e):
 		maldopage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de creaciones (sin redirecciones)/Maldoror/1')
 		links=maldopage.linkedPages()
 		linkselected=links[random.randint(0, len(links))]
-		linkhist=linkselected.getVersionHistory(forceReload=False, reverseOrder=True, getAll=True)
-		title=linkhist[0][1]
-		oldid=linkhist[0][0]
-		summary=linkhist[0][3]
-		summary=otitiscomb.cleanLinks(summary)
-		msg=u"Maldoror creó \"%s\" (%s) con el resumen: /%s/. Ver estado original: http://es.wikipedia.org/w/index.php?oldid=%s" % (linkselected.title(), title, summary, oldid)
-		if msg:
-			c.privmsg(self.channel, msg.encode('utf-8'))
+		otitiscomb.whoisItsAuthor('es', 'wikipedia', linkselected.title(), c, self.channel)
 	elif cmd in cmds['mant']['aliases']:
 		parametro=0
 		if len(args)>=2:
@@ -494,8 +504,8 @@ def on_pubmsg_thread(self, c, e):
 				lang='es'
 				pagina=parametro
 			try:
-				url='http://stats.grok.se/%s/%s/%s' % (lang, datetime.datetime.now().strftime('%Y%m'), re.sub(' ', '_', pagina))
-				f=urllib.urlopen(url, 'r')
+				url=u"http://stats.grok.se/%s/%s/%s" % (lang, datetime.datetime.now().strftime('%Y%m'), re.sub(' ', '_', pagina))
+				f=urllib.urlopen(url.encode('utf-8'), 'r')
 				m=re.compile(ur"(?i)<li class=\"sent bar\" style=\"height: \d+px; left: \d+px;\"><p style=\"margin-left: \-?\d+px;\">(?P<visits>[\d\.k]+)</p></li>").finditer(f.read())
 				cont=0
 				for i in m:
@@ -516,6 +526,9 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif error:
 			c.privmsg(self.channel, error.encode('utf-8'))
+	elif cmd in cmds['readme']['aliases']:
+		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Código: http://code.google.com/p/otitis/. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini, ejmeza, Nixón"
+		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['help']['aliases']:
 		parametro="help"
 		msg=u""

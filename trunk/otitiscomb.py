@@ -518,3 +518,19 @@ def splitParameter(defecto, args):
 		rest=defecto
 	
 	return lang, family, rest
+
+def whoisItsAuthor(lang, family, pagina, c, channel):
+	msg=error=u""
+	raw=wikipedia.Site(lang, family).getUrl('/w/index.php?title=%s&dir=prev&limit=1&action=history' % re.sub(' ', '_', pagina).encode('utf-8'))
+	#<li class="">(<a href="/w/index.php?title=George_W._Bush&amp;diff=286140379&amp;oldid=8574472" title="George W. Bush">cur</a>) (prev) <input type="radio" value="8574472" style="visibility:hidden" name="oldid" /><input type="radio" value="8574472" checked="checked" name="diff" /> <a href="/w/index.php?title=George_W._Bush&amp;oldid=8574472" title="George W. Bush">23:41, 8 December 2001</a> <span class='history-user'><a href="/wiki/Special:Contributions/208.144.114.xxx" title="Special:Contributions/208.144.114.xxx" class="mw-userlink">208.144.114.xxx</a>  <span class="mw-usertoollinks">(<a href="/wiki/User_talk:208.144.114.xxx" title="User talk:208.144.114.xxx">talk</a>)</span></span></li>
+	m=re.compile(ur"(?im)<a href=\"/w/index.php\?title=[^>]+?&amp;oldid=(?P<oldid>\d+)\" title=\"[^>]+?\">(?P<date>[^<]+?)</a> <span class=\'history-user\'><a href=[^>]+?>(?P<user>[^>]+?)</a>").search(raw)
+	if m:
+		[oldid, date, author]=[m.group('oldid'), m.group('date'), m.group('user')]
+		author=re.sub(ur".*/", ur"", author)
+		msg=u"\"%s\" creó \"%s\" (%s). Ver estado original: http://%s.%s.org/w/index.php?oldid=%s" % (author, pagina, date, lang, family, oldid)
+	else:
+		error=u"Esa página no existe"
+	if error:
+		c.privmsg(channel, error.encode('utf-8'))
+	elif msg:
+		c.privmsg(channel, msg.encode('utf-8'))
