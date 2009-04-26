@@ -37,9 +37,7 @@
 # !old paginas viejas
 # !long
 # !new
-# !drae http://buscon.rae.es/draeI/SrvltGUIBusUsual?TIPO_HTML=2&LEMA=
 # !dpd
-# !botopedia ranking de creaciones
 
 """ External modules """
 """ Python modules """
@@ -102,7 +100,7 @@ def on_pubmsg_thread(self, c, e):
 			'descripcion': u'Muestra información actual sobre Angela Beesley, co-fundadora de Wikia.com',
 			},
 		'botopedia': {
-			'aliases': ['botopedia', 'botoxpedia'],
+			'aliases': ['botopedia', 'botoxpedia', 'boto'],
 			'description': u'Analiza conductas de botopedia en el idioma y proyectos seleccionados',
 			},
 		'brion': {
@@ -180,6 +178,10 @@ def on_pubmsg_thread(self, c, e):
 		'rank': {
 			'aliases': ['rank', 'ranking', 'stat', 'stats', 'statistics'],
 			'description': u'Muestra los editores más prolíficos de las últimas X horas. Por ejemplo: !rank 24',
+			},
+		'raro': {
+			'aliases': ['raro', 'odd', 'peculiar'],
+			'description': u'Muestra un artículo curioso al azar.',
 			},
 		#'stats': {
 		#	'aliases': ['stats', 'statistics'],
@@ -315,7 +317,7 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['author']['aliases']:
 		[lang, family, pagina]=otitiscomb.splitParameter('Main Page', args)
-		otitiscomb.whoisItsAuthor(lang, family, pagina, c, self.channel)
+		otitiscomb.whoIsItsAuthor(lang, family, pagina, c, self.channel)
 	elif cmd in cmds['botopedia']['aliases']:
 		msg=u""
 		hours=24
@@ -372,6 +374,7 @@ def on_pubmsg_thread(self, c, e):
 		msg=u""
 		destcat=catlib.Category(wikipedia.Site('es', 'wikipedia'), u"Categoría:Wikipedia:Borrar (definitivo)")
 		destnum=len(destcat.articlesList())
+		print destcat.articlesList()
 		if destnum>0:
 			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s_" % (destnum, re.sub(' ', '_', destcat.title()))
 		else:
@@ -466,7 +469,7 @@ def on_pubmsg_thread(self, c, e):
 		maldopage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de creaciones (sin redirecciones)/Maldoror/1')
 		links=maldopage.linkedPages()
 		linkselected=links[random.randint(0, len(links))]
-		otitiscomb.whoisItsAuthor('es', 'wikipedia', linkselected.title(), c, self.channel)
+		otitiscomb.whoIsItsAuthor('es', 'wikipedia', linkselected.title(), c, self.channel)
 	elif cmd in cmds['mant']['aliases']:
 		parametro=0
 		if len(args)>=2:
@@ -496,6 +499,18 @@ def on_pubmsg_thread(self, c, e):
 		else:
 			error=u"El periodo debe estar entre 1 y 72 horas, ambos inclusive"
 		if error:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['raro']['aliases']:
+		msg=u""
+		page=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Artículos peculiares')
+		m=re.compile(ur"(?im)^[\*\#] *\[\[(?P<article>.+?)\]\](?P<line>.+?)$").finditer(page.get())
+		raros=[]
+		for i in m:
+			raros.append([i.group('article'), i.group('line')])
+		[article, line]=raros[random.randint(0,len(raros))]
+		line=otitiscomb.cleanWikiSyntax(line)
+		msg=u"Artículo curioso/raro al azar: \"%s\"%s Ver en http://es.wikipedia.org/wiki/%s" % (article, line, re.sub(' ', '_', article))
+		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['juego']['aliases']:
 		parametro=1
@@ -597,18 +612,18 @@ def on_pubmsg_thread(self, c, e):
 			if cmds.has_key(parametro):
 				msg=u"Comando '!%s': %s. Redirecciones de este comando son: !%s" % (parametro, cmds[parametro]['description'], ', !'.join(cmds[parametro]['aliases']))
 			else:
-				error=u"Comando desconocido"
+				error=u"Comando desconocido. Puedes ver una lista de comandos con !all"
 		else:
 			if cmds.has_key(parametro):
 				msg=u"%s" % (cmds[parametro]['description'])
 			else:
-				error=u"Comando desconocido"
+				error=u"Comando desconocido. Puedes ver una lista de comandos con !all"
 		if msg:
 			c.notice(nick, msg.encode('utf-8'))
 		elif error:
 			c.notice(nick, error.encode('utf-8'))
 	else:
-		msg=u"Comando desconocido."
+		msg=u"Comando desconocido. Puedes ver una lista de comandos con !all"
 		c.notice(nick, msg.encode('utf-8'))
 
 class BOT(SingleServerIRCBot):
