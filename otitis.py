@@ -38,6 +38,7 @@
 # !long
 # !new
 # !dpd
+# ediciones borradas en !info manuelt15
 
 """ External modules """
 """ Python modules """
@@ -76,6 +77,10 @@ def on_pubmsg_thread(self, c, e):
 		if not otitisglobals.trivialAnswerWinner:
 			otitisglobals.trivialAnswerWinner=nick
 	
+	if re.search(ur'(?i)(Orej[oi]tas|Orej[oó]n|Otitis|Torrente)', nick):
+		return
+	
+	line=line.strip()
 	#descartamos lineas muy cortas o que no empiezan por !
 	if len(line)<2 or line[0]!='!':
 		return
@@ -115,6 +120,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['compare', 'comp', 'compara'],
 			'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
 			},
+		'demoda': {
+			'aliases': ['demoda', 'de_moda', 'moda', 'hot'],
+			'description': u'Muestra las páginas más editadas de las últimas horas',
+			},
 		'dest': {
 			'aliases': ['dest', 'destruir', 'destroy', 'delete', 'borrar'],
 			'description': u'Muestra el número de páginas a la espera de ser destruidas',
@@ -153,7 +162,7 @@ def on_pubmsg_thread(self, c, e):
 			},
 		'jimbo': {
 			'aliases': ['jimbo', 'jimmy', 'jwales', 'wales', 'jimbowales', 'jimmywales'],
-			'descripcion': u'Muestra información actual sobre Jimbo Wales',
+			'description': u'Muestra información actual sobre Jimbo Wales',
 			},
 		'juego': {
 			'aliases': ['juego', 'juegos', 'game', 'games'],
@@ -370,6 +379,11 @@ def on_pubmsg_thread(self, c, e):
 		if msg:
 			msg+=u"..."
 			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['demoda']['aliases']:
+		parametro=24
+		if len(args)>=2:
+			parametro=int(args[1])
+		otitiscomb.mostEditedLastXHours(c, self.channel, parametro)
 	elif cmd in cmds['dest']['aliases']:
 		msg=u""
 		destcat=catlib.Category(wikipedia.Site('es', 'wikipedia'), u"Categoría:Wikipedia:Borrar (definitivo)")

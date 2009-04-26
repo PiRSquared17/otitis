@@ -246,6 +246,36 @@ def rankingLastXHours(c, channel, period=1):
 	for l in f:
 		l=unicode(l, 'utf-8')
 		l=l[:len(l)-1]
+		l=re.sub('_', ' ', l)
+		if cont==0:
+			cont+=1
+			continue
+		cont+=1
+		t=l.split(';')
+		if cont<=4:
+			output+=u'*%s* (%s), ' % (t[0], t[1])
+		else:
+			output+=u'%s (%s), ' % (t[0], t[1])
+	f.close()
+	output+=u'... (Sujeto al lag de Toolserver: http://es.wikipedia.org/wiki/Plantilla:Toolserver)'
+	
+	c.privmsg(channel, output.encode('utf-8'))
+
+def mostEditedLastXHours(c, channel, period=24):
+	output=u"Páginas más editadas en las últimas %d horas: " % period
+	filename='temp.txt'
+	now=datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+	lastxhours=datetime.datetime.now()-datetime.timedelta(hours=period)
+	lastxhours=lastxhours.strftime('%Y%m%d%H%M%S')
+	sql='''mysql -h eswiki-p.db.toolserver.org -e "use eswiki_p;select concat(rc_title,';',count(*)) from recentchanges where rc_namespace=0 and rc_timestamp<=%s and rc_timestamp>=%s group by rc_title order by count(*) desc limit 10" > %s''' % (now, lastxhours, filename)
+	wikipedia.output(sql)
+	os.system(sql)
+	f=open(filename, 'r')
+	cont=0
+	for l in f:
+		l=unicode(l, 'utf-8')
+		l=l[:len(l)-1]
+		l=re.sub('_', ' ', l)
 		if cont==0:
 			cont+=1
 			continue
@@ -490,7 +520,7 @@ def famousEditor(famous, c, channel):
 	salve=[u'El Unicornio Rosa Invisible', u'El Monstruo de Espagueti Volador', u'La Tetera de Russell', u'Chuck Norris']
 	msg=u""
 	[article, timestamp, diff]=getLastEditInfo(famous, 'en', 'wikipedia')
-	msg=u"¡%s salve a %s! Su última edición fue realizada el %s en \"en:%s\", http://en.wikipedia.org/w/index.php?diff=prev&oldid=%s. Extraido de: http://en.wikipedia.org/wiki/Special:Contributions/%s" % (salve[random.randint(0, len(salve))], famous, timestamp, article, diff, re.sub(' ', '_', famous))
+	msg=u"¡%s salve a %s! Su última edición fue realizada el %s en \"en:%s\", http://en.wikipedia.org/w/index.php?diff=prev&oldid=%s. Extraido de: http://en.wikipedia.org/wiki/Special:Contributions/%s" % (salve[random.randint(0, len(salve)-1)], famous, timestamp, article, diff, re.sub(' ', '_', famous))
 	if msg:
 		c.privmsg(channel, msg.encode('utf-8'))
 
@@ -526,18 +556,23 @@ def splitParameter(defecto, args):
 	family=''
 	rest=''
 	if len(t)>=3:
-		rest=':'.join(t[2:])
-		for i in range(0,2):
+		#rest=':'.join(t[2:])
+		for i in [0, 1]:
 			if existsLanguage(t[i]) and not lang:
 				lang=t[i]
 			elif existsFamily(translateFamily(t[i])) and not family:
 				family=translateFamily(t[i])
+			else:
+				rest+='%s:' % t[i]
+		rest+=t[2]
 	elif len(t)==2:
 		rest=t[1]
 		if existsLanguage(t[0]) and not lang:
 			lang=t[0]
 		elif existsFamily(translateFamily(t[0])) and not family:
 			family=translateFamily(t[0])
+		else:
+			rest=u'%s:%s' % (t[0], rest)
 	elif len(t)==1:
 		rest=t[0]
 	
