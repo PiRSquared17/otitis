@@ -134,7 +134,7 @@ def existsLanguage(lang):
 	return lang.lower() in otitisglobals.preferences['wikilangs']
 
 def existsFamily(family):
-	families=['commons', 'wiktionary', 'wikisource', 'wikinews', 'wikibooks', 'wikiquote', 'wikispecies', 'meta', 'wikiversity']
+	families=['wikipedia', 'commons', 'wiktionary', 'wikisource', 'wikinews', 'wikibooks', 'wikiquote', 'wikispecies', 'meta', 'wikiversity']
 	return family.lower() in families
 
 def translateFamily(family):
@@ -506,6 +506,12 @@ def cleanHTML(x):
 	
 	return x
 
+def cleanWikiSyntax(x):
+	x=cleanLinks(x)
+	x=re.sub(ur'\'\'+', ur'', x)
+	
+	return x
+
 def splitParameter(defecto, args):
 	parametro=''
 	if len(args)>=2:
@@ -527,7 +533,7 @@ def splitParameter(defecto, args):
 			elif existsFamily(translateFamily(t[i])) and not family:
 				family=translateFamily(t[i])
 	elif len(t)==2:
-		rest=':'.join(t[1:])
+		rest=t[1]
 		if existsLanguage(t[0]) and not lang:
 			lang=t[0]
 		elif existsFamily(translateFamily(t[0])) and not family:
@@ -535,16 +541,25 @@ def splitParameter(defecto, args):
 	elif len(t)==1:
 		rest=t[0]
 	
-	if not lang:
+	if family.lower()=='wikipedia' and (not lang or lang=='es'): #caso especial, Wikipedia:Artículos solicitados y cualquier de ese namespace
 		lang='es'
-	if not family:
-		family='wikipedia'
-	if not rest:
-		rest=defecto
+		rest='Wikipedia:'+rest
+	else:
+		if not lang:
+			lang='es'
+		if not family:
+			family='wikipedia'
+		if not rest:
+			rest=defecto
+	
+	print 2
+	print lang
+	print family
+	print rest
 	
 	return lang, family, rest
 
-def whoisItsAuthor(lang, family, pagina, c, channel):
+def whoIsItsAuthor(lang, family, pagina, c, channel):
 	msg=error=u""
 	raw=wikipedia.Site(lang, family).getUrl('/w/index.php?title=%s&dir=prev&limit=1&action=history' % re.sub(' ', '_', pagina).encode('utf-8'))
 	#<li class="">(<a href="/w/index.php?title=George_W._Bush&amp;diff=286140379&amp;oldid=8574472" title="George W. Bush">cur</a>) (prev) <input type="radio" value="8574472" style="visibility:hidden" name="oldid" /><input type="radio" value="8574472" checked="checked" name="diff" /> <a href="/w/index.php?title=George_W._Bush&amp;oldid=8574472" title="George W. Bush">23:41, 8 December 2001</a> <span class='history-user'><a href="/wiki/Special:Contributions/208.144.114.xxx" title="Special:Contributions/208.144.114.xxx" class="mw-userlink">208.144.114.xxx</a>  <span class="mw-usertoollinks">(<a href="/wiki/User_talk:208.144.114.xxx" title="User talk:208.144.114.xxx">talk</a>)</span></span></li>
