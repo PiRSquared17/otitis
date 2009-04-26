@@ -118,7 +118,7 @@ def on_pubmsg_thread(self, c, e):
 			'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
 			},
 		'dest': {
-			'aliases': ['dest', 'destruir', 'destroy'],
+			'aliases': ['dest', 'destruir', 'destroy', 'delete', 'borrar'],
 			'description': u'Muestra el número de páginas a la espera de ser destruidas',
 			},
 		'die': {
@@ -337,7 +337,8 @@ def on_pubmsg_thread(self, c, e):
 			msg+=u"... (Total: %d creaciones)" % total
 			max_porcentaje=authors_list[0][0]*1.0/(total/100)
 			if max_porcentaje>=10:
-				msg+=u" *%s ha creado el %.2f%%*, ¿es un bot? http://%s.%s.org/wiki/Special:Contributions/%s" % (authors_list[0][1], max_porcentaje, lang, family, authors_list[0][1])
+				msg+=u" *%s ha creado el %.2f%%*, ¿es un bot?" % (authors_list[0][1], max_porcentaje)
+			msg+=u" http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, authors_list[0][1])
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['brion']['aliases']:
 		otitiscomb.famousEditor('Brion VIBBER', c, self.channel)
@@ -556,16 +557,19 @@ def on_pubmsg_thread(self, c, e):
 			try:
 				url=u"http://stats.grok.se/%s/%s/%s" % (lang, datetime.datetime.now().strftime('%Y%m'), re.sub(' ', '_', pagina))
 				f=urllib.urlopen(url.encode('utf-8'), 'r')
-				m=re.compile(ur"(?i)<li class=\"sent bar\" style=\"height: \d+px; left: \d+px;\"><p style=\"margin-left: \-?\d+px;\">(?P<visits>[\d\.k]+)</p></li>").finditer(f.read())
+				m=re.compile(ur"(?i)<li class=\"sent bar\" style=\"height: \d+px; left: \d+px;\"><p style=\"margin-left: \-?\d+px;\">(?P<visits>[\d\.km]+)</p></li>").finditer(f.read())
 				cont=0
 				for i in m:
 					cont+=1
 					if cont in [day-3, day-2, day-1]:
 						visitas=i.group('visits')
-						visitas=re.sub(ur'\.', ur'', visitas)
-						visitas=re.sub(ur'(?i)k', ur'000', visitas)
-						visitas=re.sub(ur'(?i)m', ur'000000', visitas)
-						msg+=u"%d de %s (%s), " % (cont, otitiscomb.number2month(month), visitas)
+						if re.search(ur"(?i)k", visitas):
+							visitas=re.sub(ur'(?i)k', ur'', visitas)
+							visitas=float(visitas)*1000
+						elif re.search(ur"(?i)m", visitas):
+							visitas=re.sub(ur'(?i)m', ur'', visitas)
+							visitas=float(visitas)*1000000
+						msg+=u"%d de %s (%s), " % (cont, otitiscomb.number2month(month), int(visitas))
 				f.close()
 			except:
 				error=u"Hubo un error al leer la página de estadísticas"
