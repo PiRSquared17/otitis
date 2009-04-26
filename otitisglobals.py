@@ -76,7 +76,7 @@ preferences['site']     = wikipedia.Site(preferences['language'], preferences['f
 #testEdit                = wikipedia.Page(preferences['site'], 'User:%s/Sandbox' % preferences['botNick'])
 #testEdit.put(u'Test edit', u'BOT - Arrancando robot') #same text always, avoid avbotcron edit panic
 if not preferences['channel']:
-	preferences['channel']  = '#%s-%s' % (preferences['family'], preferences['language'])
+	preferences['channel']  = '#%s-%s-testing' % (preferences['family'], preferences['language'])
 if not preferences['nickname']:
 	preferences['nickname'] = '%s%s' % (preferences['botNick'], str(random.randint(1000, 9999)))
 
