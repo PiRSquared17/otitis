@@ -473,9 +473,15 @@ def famousEditor(famous, c, channel):
 		c.privmsg(channel, msg.encode('utf-8'))
 
 def cleanLinks(x):
-	x=re.sub(ur'\[\[([^\|]*?)\|([^\]]*?)\]\]', ur'\2', x)
+	x=re.sub(ur'\[\[([^\|\]]*?)\|([^\]]*?)\]\]', ur'\2', x)
 	x=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', x)
 	x=re.sub(ur'<a href[^>]+?>([^<]+?)</a>', ur'\1', x)
+	return x
+
+def cleanHTML(x):
+	x=re.sub(ur'\&nbsp\;', ur' ', x)
+	x=re.sub(ur'\&ndash\;', ur'-', x)
+	
 	return x
 
 def splitParameter(defecto, args):
