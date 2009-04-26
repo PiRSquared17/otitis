@@ -204,104 +204,56 @@ def on_pubmsg_thread(self, c, e):
 	
 	#qué comando ha introducido?
 	if cmd in cmds['info']['aliases']:
-		parametro=nick
-		if len(args)>=2:
-			parametro=' '.join(args[1:])
-		parametro=re.sub(ur'[\[\]]', ur'', parametro)
-		parametro=re.sub(ur'([^\|]*?)\|.*', ur'\1', parametro)
-		t=parametro.split(':')
-		lang=''
-		family=''
-		user=nick
-		if len(t)>=3:
-			user=':'.join(t[2:])
-			for i in range(0,2):
-				if otitiscomb.existsLanguage(t[i]) and not lang:
-					lang=t[i]
-				elif otitiscomb.existsFamily(otitiscomb.translateFamily(t[i])) and not family:
-					family=otitiscomb.translateFamily(t[i])
-		elif len(t)==2:
-			user=':'.join(t[1:])
-			if otitiscomb.existsLanguage(t[0]) and not lang:
-				lang=t[0]
-			elif otitiscomb.existsFamily(otitiscomb.translateFamily(t[0])) and not family:
-				family=otitiscomb.translateFamily(t[0])
+		[lang, family, user]=otitiscomb.splitParameter(nick, args)
+		user=re.sub(ur"(User|Usuario)\:", ur"", user) #por si acaso alguien mete !info User:Emijrp
+		msg=error=u""
+		ediciones=otitiscomb.loadUserEdits(user, lang, family)
+		if ediciones>=0:
+			msg+=u"\"%s:%s:User:%s\" tiene *%d* ediciones." % (lang, family, user, ediciones)
+			[primeraArticulo, primeraFecha, diff]=otitiscomb.getFirstEditInfo(user, lang, family)
+			[ultimaArticulo, ultimaFecha, diff]=otitiscomb.getLastEditInfo(user, lang, family)
+			media=0.0
+			edad_text=u''
+			if primeraFecha and ultimaFecha:
+				primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
+				ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
+				edad=datetime.datetime.now()-primeraFechaObject
+				edad_text=u'%s días' % edad.days
+				media=ediciones*1.0/int(edad.days)
+				msg+=u" Primera: \"%s\" (Fecha: %s). Última: \"%s\" (Fecha: %s). Edad: %s (%.1f ediciones/día)." % (primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad_text, media)
+			grupos=""
+			#hacer función busca grupos
+			if grupos:
+				msg+=u" Grupos: %s." % grupos
+			ranking=""
+			if lang=='es':
+				rankingpage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de ediciones')
+				m=re.compile(ur"(?im)^\| (?P<position>\d+) \|\| \[\[User:%s\|%s\]\]" % (user, user)).finditer(rankingpage.get())
+				for i in m:
+					ranking=i.group('position')
+				if not ranking:
+					ranking=u">500"
+			if ranking:
+				msg+=u" Puesto en el ranking de ediciones: *%s*." % ranking
+			msg+=u" Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, re.sub(ur' ', ur'_', user))
 		else:
-			user=t[0]
-		
-		if not lang:
-			lang='es'
-		if not family:
-			family='wikipedia'
-		
-		msg=u""
-		error=u""
-		
-		if lang:
-			if family:
-				if not user:
-					user=nick
-				ediciones=otitiscomb.loadUserEdits(user, lang, family)
-				if ediciones>=0:
-					msg+=u"\"%s:%s:User:%s\" tiene *%d* ediciones." % (lang, family, user, ediciones)
-					[primeraArticulo, primeraFecha, diff]=otitiscomb.getFirstEditInfo(user, lang, family)
-					[ultimaArticulo, ultimaFecha, diff]=otitiscomb.getLastEditInfo(user, lang, family)
-					media=0.0
-					edad_text=u''
-					if primeraFecha and ultimaFecha:
-						primeraFechaObject=otitiscomb.getDateTimeObject(primeraFecha)
-						ultimaFechaObject=otitiscomb.getDateTimeObject(ultimaFecha)
-						edad=datetime.datetime.now()-primeraFechaObject
-						edad_text=u'%s días' % edad.days
-						media=ediciones*1.0/int(edad.days)
-						msg+=u" Primera: \"%s\" (Fecha: %s). Última: \"%s\" (Fecha: %s). Edad: %s (%.1f ediciones/día)." % (primeraArticulo, primeraFecha, ultimaArticulo, ultimaFecha, edad_text, media)
-					grupos=""
-					#hacer función busca grupos
-					if grupos:
-						msg+=u" Grupos: %s." % grupos
-					ranking=""
-					if lang=='es':
-						rankingpage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de ediciones')
-						m=re.compile(ur"(?im)^\| (?P<position>\d+) \|\| \[\[User:%s\|%s\]\]" % (user, user)).finditer(rankingpage.get())
-						for i in m:
-							ranking=i.group('position')
-						if not ranking:
-							ranking=u">500"
-					if ranking:
-						msg+=u" Puesto en el ranking de ediciones: *%s*." % ranking
-					msg+=u" Detalles: http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, re.sub(ur' ', ur'_', user))
-				else:
-					error+=u"Ese usuario no existe."
-			else:
-				error+=u"Esa familia no existe. "
-		else:
-			error+=u"Ese idioma no existe. "
-		if msg:
-			c.privmsg(self.channel, msg.encode('utf-8'))
-		elif error:
+			error+=u"Ese usuario no existe."
+		if error:
 			c.privmsg(self.channel, error.encode('utf-8'))
+		elif msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['ainfo']['aliases']:
-		parametro='Wikipedia:Portada'
-		lang=''
-		if len(args)>=2:
-			parametro=' '.join(args[1:])
-		if parametro:
-			t=parametro.split(':')
-			if len(t)>1:
-				pagina=':'.join(t[1:])
-				lang=t[0]
-			else:
-				lang='es'
-				pagina=parametro
-		page=wikipedia.Page(wikipedia.Site(lang, 'wikipedia'), pagina)
+		[lang, family, pagina]=otitiscomb.splitParameter('Main Page', args)
+		page=wikipedia.Page(wikipedia.Site(lang, family), pagina)
 		msg=''
 		if page.exists():
+			pagina=':'.join(family, lang, pagina)
 			if page.isRedirectPage():
-				msg=u"\"%s\": #REDIRECT [[%s]]" % (parametro, page.getRedirectTarget().title())
+				msg=u"\"%s\": #REDIRECT \"%s\"" % (pagina, page.getRedirectTarget().title())
 			elif page.isDisambig():
-				msg=u"\"%s\": Desambiguación" % (parametro)
+				msg=u"\"%s\": Desambiguación" % (pagina)
 			else:
-				msg=u"\"%s\": %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis. Extraido de http://%s.wikipedia.org/wiki/%s" % (parametro, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()), lang, re.sub(' ', '_', page.title()))
+				msg=u"\"%s\": %d bytes, %d enlaces, %d imágenes, %d categorías, %d interwikis. Extraido de http://%s.wikipedia.org/wiki/%s" % (pagina, len(page.get()), len(page.linkedPages()), len(page.imagelinks()), len(page.categories()), len(page.interwiki()), lang, re.sub(' ', '_', page.title()))
 		c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['all']['aliases']:
 		temp=[]
@@ -349,10 +301,8 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"\"User:%s\": A favor (%s), En contra (%s), Porcentaje favorables (%s%%). Detalles: http://es.wikipedia.org/wiki/%s" % (i.group('user'), i.group('afavor'), i.group('encontra'), i.group('porcentaje'), re.sub(' ', '_', i.group('cab')))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['compare']['aliases']:
-		parametro='Wikipedia:Portada'
-		if len(args)>=2:
-			parametro=' '.join(args[1:])
-		page=wikipedia.Page(otitisglobals.preferences['site'], parametro)
+		[lang, family, pagina]=otitiscomb.splitParameter('Main Page', args)
+		page=wikipedia.Page(wikipedia.Site(lang, family), pagina)
 		msg=u''
 		if page.exists():
 			iws=page.interwiki()
@@ -374,17 +324,16 @@ def on_pubmsg_thread(self, c, e):
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['dump']['aliases']:
-		parametro='es'
-		if len(args)>=2:
-			parametro=' '.join(args[1:])
-		
+		[lang, family, pagina]=otitiscomb.splitParameter('', args)
 		url=urllib.urlopen('http://download.wikimedia.org/backup-index.html', 'r')
 		raw=url.read()
 		url.close()
-		m=re.compile(ur'<li>(?P<date>[^<]+?)<a href="%swiki/\d+">%swiki</a>: <span class=\'[^\']+\'>(?P<comment>[^<]+?)</span></li>' % (parametro, parametro)).finditer(raw)
+		if family=='wikipedia':
+			family='wiki'
+		m=re.compile(ur'<li>(?P<date>[^<]+?)<a href="%s%s/\d+">%s%s</a>: <span class=\'[^\']+\'>(?P<comment>[^<]+?)</span></li>' % (lang, family, lang, family)).finditer(raw)
 		msg=u""
 		for i in m:
-			msg+="%swiki dump: %s, %s" % (parametro, i.group('date'), i.group('comment'))
+			msg+="%s%s dump: %s, %s. Extraido de: http://download.wikimedia.org/%s%s/latest/" % (lang, family, i.group('date'), i.group('comment'), lang, family)
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['efem']['aliases']:
@@ -523,6 +472,8 @@ def on_pubmsg_thread(self, c, e):
 		month=datetime.datetime.today().month
 		if len(args)>=2:
 			parametro=' '.join(args[1:])
+		else:
+			parametro=u'Usuario:%s' % nick
 		if parametro:
 			t=parametro.split(':')
 			if len(t)>1 and otitiscomb.existsLanguage(t[0]):
