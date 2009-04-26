@@ -477,3 +477,38 @@ def cleanLinks(x):
 	x=re.sub(ur'\[\[([^\|\]]*?)\]\]', ur'\1', x)
 	x=re.sub(ur'<a href[^>]+?>([^<]+?)</a>', ur'\1', x)
 	return x
+
+def splitParameter(defecto, args):
+	parametro=''
+	if len(args)>=2:
+		parametro=' '.join(args[1:])
+	parametro=re.sub(ur'[\[\]]', ur'', parametro)
+	parametro=re.sub(ur'([^\|]*?)\|.*', ur'\1', parametro)
+	t=parametro.strip().split(':')
+	lang=''
+	family=''
+	rest=''
+	if len(t)>=3:
+		rest=':'.join(t[2:])
+		for i in range(0,2):
+			if existsLanguage(t[i]) and not lang:
+				lang=t[i]
+			elif existsFamily(translateFamily(t[i])) and not family:
+				family=translateFamily(t[i])
+	elif len(t)==2:
+		rest=':'.join(t[1:])
+		if existsLanguage(t[0]) and not lang:
+			lang=t[0]
+		elif existsFamily(translateFamily(t[0])) and not family:
+			family=translateFamily(t[0])
+	elif len(t)==1:
+		rest=t[0]
+	
+	if not lang:
+		lang='es'
+	if not family:
+		family='wikipedia'
+	if not rest:
+		rest=defecto
+	
+	return lang, family, rest
