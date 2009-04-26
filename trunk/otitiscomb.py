@@ -273,13 +273,35 @@ def getNewPagesLastXHours(lang, family, period):
 		offset=datetime.datetime.now()-datetime.timedelta(hours=period)
 		offset=offset.strftime('%Y%m%d%H%M%S')
 		raw=site.getUrl('/w/index.php?title=Special:Newpages&offset=%s&dir=prev&limit=5000' % (offset))
-		m=re.compile(ur'(?i)\<li[^\>]*?\>\d\d:\d\d').finditer(raw)
+		m=re.compile(ur"(?im)^<li").finditer(raw)
 		for i in m:
 			cont+=1
+		return cont
 	except:
 		pass
 	
-	return cont-1
+	return -1
+
+def getNewPagesAuthorsLastXHours(lang, family, period):
+	site=wikipedia.Site(lang, family)
+	cont=0
+	authors={}
+	try:
+		offset=datetime.datetime.now()-datetime.timedelta(hours=period)
+		offset=offset.strftime('%Y%m%d%H%M%S')
+		raw=site.getUrl('/w/index.php?title=Special:Newpages&offset=%s&dir=prev&limit=5000' % (offset))
+		m=re.compile(ur"(?im)class=\"(new )?mw-userlink\"[^>]*?>(?P<creator>[^<]+?)</a>").finditer(raw)
+		for i in m:
+			creator=i.group("creator")
+			if authors.has_key(creator):
+				authors[creator]+=1
+			else:
+				authors[creator]=1
+		return authors
+	except:
+		pass
+	
+	return {}
 
 def loadQuestions():
 	f=open('trivial.txt', 'r')
@@ -490,7 +512,10 @@ def splitParameter(defecto, args):
 		parametro=' '.join(args[1:])
 	parametro=re.sub(ur'[\[\]]', ur'', parametro)
 	parametro=re.sub(ur'([^\|]*?)\|.*', ur'\1', parametro)
-	t=parametro.strip().split(':')
+	temp=parametro.strip().split(':')
+	t=[]
+	for i in temp:
+		t.append(i.strip())
 	lang=''
 	family=''
 	rest=''

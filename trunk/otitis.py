@@ -38,6 +38,8 @@
 # !long
 # !new
 # !drae http://buscon.rae.es/draeI/SrvltGUIBusUsual?TIPO_HTML=2&LEMA=
+# !dpd
+# !botopedia ranking de creaciones
 
 """ External modules """
 """ Python modules """
@@ -99,6 +101,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['angela', 'angelabeesley', 'beesley'],
 			'descripcion': u'Muestra información actual sobre Angela Beesley, co-fundadora de Wikia.com',
 			},
+		'botopedia': {
+			'aliases': ['botopedia', 'botoxpedia'],
+			'description': u'Analiza conductas de botopedia en el idioma y proyectos seleccionados',
+			},
 		'brion': {
 			'aliases': ['brion', 'brionvibber', 'vibber'],
 			'descripcion': u'Muestra información actual sobre Brion Vibber, desarrollador de MediaWiki',
@@ -118,6 +124,14 @@ def on_pubmsg_thread(self, c, e):
 		'die': {
 			'aliases': ['die', 'muerete', 'bye', 'quit'],
 			'description': u'Finge una muerte atroz'
+			},
+		'dpd': {
+			'aliases': ['dpd'],
+			'description': u'Busca una palabra en el Diccionario Panhispánico de Dudas'
+			},
+		'drae': {
+			'aliases': ['drae', 'rae'],
+			'description': u'Busca una palabra en el DRAE'
 			},
 		'dump': {
 			'aliases': ['dump', 'dumps'],
@@ -276,32 +290,55 @@ def on_pubmsg_thread(self, c, e):
 	elif cmd in cmds['angela']['aliases']:
 		otitiscomb.famousEditor('Angela', c, self.channel)
 	elif cmd in cmds['art']['aliases']:
-		parametro='es'
-		if len(args)>=2:
-			parametro=' '.join(args[1:])
-		
-		msg=""
-		if otitiscomb.existsLanguage(parametro):
-			good=otitiscomb.getProjectStats(parametro, 'wikipedia')['good']
-			hours=24
-			good_last=otitiscomb.getNewPagesLastXHours(parametro, 'wikipedia', hours)
-			if parametro=='es':
-				msg=u"http://%s.wikipedia.org tiene %d artículos. Puedes crear un artículo solicitado (http://es.wikipedia.org/wiki/Wikipedia:Artículos_solicitados)" % (parametro, good)
+		msg=error=""
+		[lang, family, pagina]=otitiscomb.splitParameter('', args+[':'])
+		good=otitiscomb.getProjectStats(lang, family)['good']
+		hours=24
+		good_last=otitiscomb.getNewPagesLastXHours(lang, family, hours)
+		if lang=='es':
+			if family=='wikipedia':
+				msg=u"http://%s.%s.org tiene %d artículos. Se han creado %d en las últimas %d horas. Puedes crear un artículo solicitado (http://es.wikipedia.org/wiki/Wikipedia:Artículos_solicitados)" % (lang, family, good, good_last, hours)
 			else:
-				good_es=otitiscomb.getProjectStats('es', 'wikipedia')['good']
-				good_diff=good-good_es
-				good_diff_text=''
-				if good_diff<0:
-					good_diff_text=u'%d menos' % abs(good_diff)
-				else:
-					good_diff_text=u'%d más' % abs(good_diff)
-				msg=u"http://%s.wikipedia.org tiene %d artículos (%s que Wikipedia en español). Se han creado %d en las últimas %d horas. Puedes ver sus últimas creaciones en: http://%s.wikipedia.org/wiki/Special:Newpages" % (parametro, good, good_diff_text, good_last, hours, parametro)
+				msg=u"http://%s.%s.org tiene %d artículos. Se han creado %d en las últimas %d horas." % (lang, family, good, good_last, hours)
 		else:
-			msg=u"Error: ese idioma no existe"
-		c.privmsg(self.channel, msg.encode('utf-8'))
+			good_es=otitiscomb.getProjectStats('es', family)['good']
+			good_diff=good-good_es
+			good_diff_text=''
+			if good_diff<0:
+				good_diff_text=u'%d menos' % abs(good_diff)
+			else:
+				good_diff_text=u'%d más' % abs(good_diff)
+			msg=u"http://%s.%s.org tiene %d artículos (%s que %s en español). Se han creado %d en las últimas %d horas. Puedes ver sus últimas creaciones en: http://%s.%s.org/wiki/Special:Newpages" % (lang, family, good, good_diff_text, family, good_last, hours, lang, family)
+		if error:
+			c.privmsg(self.channel, error.encode('utf-8'))
+		elif msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['author']['aliases']:
 		[lang, family, pagina]=otitiscomb.splitParameter('Main Page', args)
 		otitiscomb.whoisItsAuthor(lang, family, pagina, c, self.channel)
+	elif cmd in cmds['botopedia']['aliases']:
+		msg=u""
+		hours=24
+		[lang, family, pagina]=otitiscomb.splitParameter('', args+[':'])
+		authors=otitiscomb.getNewPagesAuthorsLastXHours(lang, family, hours)
+		authors_list=[]
+		total=0.0
+		for k, v in authors.items():
+			authors_list.append([v, k])
+			total+=v
+		authors_list.sort()
+		authors_list.reverse()
+		msg=u"Analizando máximos creadores en http://%s.%s.org en las últimas %d horas: " % (lang, family, hours)
+		cont=0
+		while cont<5:
+			msg+=u"%s (%d), " % (authors_list[cont][1], authors_list[cont][0])
+			cont+=1
+		if msg:
+			msg+=u"... (Total: %d creaciones)" % total
+			max_porcentaje=authors_list[0][0]*1.0/(total/100)
+			if max_porcentaje>=10:
+				msg+=u" *%s ha creado el %.2f%%*, ¿es un bot? http://%s.%s.org/wiki/Special:Contributions/%s" % (authors_list[0][1], max_porcentaje, lang, family, authors_list[0][1])
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['brion']['aliases']:
 		otitiscomb.famousEditor('Brion VIBBER', c, self.channel)
 	elif cmd in cmds['cab']['aliases']:
@@ -338,6 +375,19 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s_" % (destnum, re.sub(' ', '_', destcat.title()))
 		else:
 			msg=u"*No hay que borrar* ninguna página. Todo en orden en http://es.wikipedia.org/wiki/%s_" % (re.sub(' ', '_', destcat.title()))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['drae']['aliases']:
+		msg=u""
+		[null, null, pagina]=otitiscomb.splitParameter('', args)
+		url=u"http://buscon.rae.es/draeI/SrvltGUIBusUsual?TIPO_HTML=2&LEMA=%s" % pagina
+		f=urllib.urlopen(url.encode('utf-8'), 'r')
+		raw=f.read()
+		f.close()
+		if re.search(ur'(?i)no está en el Diccionario', raw):
+			msg=u"La palabra \"%s\" no está en el Diccionario de la RAE" % pagina
+		else:
+			msg=u"La palabra \"%s\" está recogida en el Diccionario de la RAE. Ver: %s" % (pagina, url)
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['dump']['aliases']:
