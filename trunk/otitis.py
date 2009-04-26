@@ -32,7 +32,6 @@
 # !cafe hilos + concurridos/nuevos
 # última versión del código en !author
 # !fap !fapfap
-# !odd
 # !fetch que se salte las infoboxes
 # !old paginas viejas
 # !long
@@ -91,10 +90,6 @@ def on_pubmsg_thread(self, c, e):
 		'art': {
 			'aliases': ['art', 'arts', 'pene'],
 			'description': u'Muestra el número de artículos de cierta Wikipedia',
-			},
-		'info': {
-			'aliases': ['info', 'uinfo', 'userinfo', 'user', 'usuario'],
-			'description': u'Muestra información sobre un usuario. Por ejemplo: !info Jimbo Wales',
 			},
 		'ainfo': {
 			'aliases': ['ainfo', 'pageinfo'],
@@ -160,6 +155,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['global', 'globalstats', 'globales'],
 			'description': u'Muestra estadísticas globales',
 			},
+		'info': {
+			'aliases': ['info', 'uinfo', 'userinfo', 'user', 'usuario'],
+			'description': u'Muestra información sobre un usuario. Por ejemplo: !info Jimbo Wales',
+			},
 		'jimbo': {
 			'aliases': ['jimbo', 'jimmy', 'jwales', 'wales', 'jimbowales', 'jimmywales'],
 			'description': u'Muestra información actual sobre Jimbo Wales',
@@ -178,7 +177,7 @@ def on_pubmsg_thread(self, c, e):
 			},
 		'mant': {
 			'aliases': ['mant', 'mantenimiento'],
-			'description': u'Muestra el mantenimiento actual',
+			'description': u'Muestra el mantenimiento actual o de una fecha concreta',
 			},
 		'preg': {
 			'aliases': ['preg', 'pregunta', 'nuevapregunta'],
@@ -349,7 +348,7 @@ def on_pubmsg_thread(self, c, e):
 			max_porcentaje=authors_list[0][0]*1.0/(total/100)
 			if max_porcentaje>=10:
 				msg+=u" *%s ha creado el %.2f%%*, ¿es un bot?" % (authors_list[0][1], max_porcentaje)
-			msg+=u" http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, authors_list[0][1])
+			msg+=u" http://%s.%s.org/wiki/Special:Contributions/%s" % (lang, family, re.sub(' ', '_', authors_list[0][1]))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['brion']['aliases']:
 		otitiscomb.famousEditor('Brion VIBBER', c, self.channel)
@@ -393,6 +392,19 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s_" % (destnum, re.sub(' ', '_', destcat.title()))
 		else:
 			msg=u"*No hay que borrar* ninguna página. Todo en orden en http://es.wikipedia.org/wiki/%s_" % (re.sub(' ', '_', destcat.title()))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['dpd']['aliases']:
+		msg=u""
+		[null, null, pagina]=otitiscomb.splitParameter('', args)
+		url=u"http://buscon.rae.es/dpdI/SrvltGUIBusDPD?lema=%s" % pagina
+		f=urllib.urlopen(url.encode('utf-8'), 'r')
+		raw=f.read()
+		f.close()
+		if re.search(ur'(?i)no est\&\#x00E1\; registrada en el', raw):
+			msg=u"La palabra \"%s\" no está en el DPD" % pagina
+		else:
+			msg=u"La palabra \"%s\" está recogida en el DPD. Ver: %s" % (pagina, url)
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['drae']['aliases']:
@@ -493,7 +505,7 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"El parámetro debe estar entre -365 y 365, ambos inclusive. Por ejemplo: !mant -2 para el mantenimiento de anteayer"
 		else:
 			fecha=datetime.datetime.today()+datetime.timedelta(days=parametro)
-			diames=u'%s de %s' % (fecha.day, number2month(fecha.month))
+			diames=u'%s de %s' % (fecha.day, otitiscomb.number2month(fecha.month))
 			mantcat=catlib.Category(otitisglobals.preferences['site'], u'Categoría:Wikipedia:Mantenimiento:%s' % diames)
 			
 			mantnum=len(mantcat.articlesList())
