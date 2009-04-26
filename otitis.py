@@ -338,19 +338,30 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['efem']['aliases']:
 		fecha=datetime.datetime.today()
-		diames=u'%s de %s' % (fecha.day, otitiscomb.number2month(fecha.month))
+		diademes=u'%s de %s' % (fecha.day, otitiscomb.number2month(fecha.month))
+		[lang, family, pagina]=otitiscomb.splitParameter(diademes, args)
 		msg=u""
-		efempage=wikipedia.Page(otitisglobals.preferences['site'], diames)
-		m=re.compile(ur'(?im)^\* *(?P<line>\[\[\d+\]\].*?)$').finditer(efempage.get().split('==')[2])
+		efempage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), pagina) #pillamos el es: y leugo saltamos al otro idioma si es necesario
+		if lang!='es':
+			iws=efempage.interwiki()
+			for iw in iws:
+				if iw.site().lang==lang:
+					efempage=iw
+					break
+		m=re.compile(ur'(?im)^[\*\#] *(?P<line>\[\[\d\d\d\d?\]\].+?) *$').finditer(efempage.get().split('==')[2])
 		temp=[]
 		for i in m:
 			temp.append(i.group('line'))
 		if temp:
 			selected=temp[random.randint(0,len(temp))]
 			selected=otitiscomb.cleanLinks(selected)
-			selected=re.sub(ur'\&nbsp\;', ur' ', selected)
-			msg=u"Un día como hoy: %s Extraido de http://es.wikipedia.org/wiki/%s" % (selected, re.sub(' ', '_',efempage.title()))
-		if msg:
+			selected=otitiscomb.cleanHTML(selected)
+			msg=u"Un día como hoy (%s): %s Extraido de http://%s.wikipedia.org/wiki/%s" % (efempage.title(), selected, lang, re.sub(' ', '_', efempage.title()))
+		else:
+			error=u"No ha sido posible extraer efemérides de %s:" % lang
+		if error:
+			c.privmsg(self.channel, error.encode('utf-8'))
+		elif msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['encarta']['aliases']:
 		msg=""
