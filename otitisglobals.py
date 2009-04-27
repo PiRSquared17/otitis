@@ -92,4 +92,23 @@ global trivialTimer
 trivialTimer=u""
 global globalStats
 globalStats={'0':{},'+1':{}}
-
+global cloaks
+cloaks={
+	u'wikimedia/Melos': u'Chabacano',
+	u'unaffiliated/david0811': u'David0811',
+	u'Wikimedia/Dferg': u'Dferg',
+	u'wikimedia/Drini': u'Drini',
+	u'wikipedia/ejmeza': u'Ejmeza',
+	u'wikimedia/Melos': u'Melos',
+	u'wikipedia/Netito777': u'Netito777',
+	u'wikipedia/Nicop': u'Nicop',
+	u'wikipedia/Paintman': u'Paintman',
+	u'wikipedia/Platonides': u'Platonides',
+	u'wikipedia/saloca': u'Saloca',
+	u'wikimedia/Taichi': u'Taichi',
+	u'wikipedia/txo': u'Txo',
+}
+global nicks
+nicks={
+	u'Nixon-': u'Nixón',
+}

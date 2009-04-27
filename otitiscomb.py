@@ -92,6 +92,12 @@ def getParameters():
 			else:
 				otitisglobals.preferences['ownerNick'] = arg[11:]
 			obligatory-=1
+		elif arg.startswith('-testmode'):
+			if len(arg) == 9:
+				otitisglobals.preferences['testmode'] = wikipedia.input(u'Please enter test mode (True or False):')
+			else:
+				otitisglobals.preferences['testmode'] = arg[10:]
+			obligatory-=1
 	
 	if obligatory:
 		wikipedia.output(u"Not all obligatory parameters were found. Please, check (*) parameters.")
@@ -100,7 +106,7 @@ def getParameters():
 def number2month(month):
 	months={1:'enero', 2:'febrero', 3:'marzo', 4:'abril', 5:'mayo', 6:'junio', 7:'julio', 8:'agosto', 9:'septiembre', 10:'octubre', 11:'noviembre', 12:'diciembre'}
 	
-	return months[month]
+	return months[int(month)]
 
 def month2number(month):
 	months={
