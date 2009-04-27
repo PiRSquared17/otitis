@@ -36,8 +36,8 @@
 # !old paginas viejas
 # !long
 # !new
-# !dpd
 # ediciones borradas en !info manuelt15
+# !art pt que muestre si al ritmo actual nos adelantan y cuando, o nunca
 
 """ External modules """
 """ Python modules """
@@ -68,6 +68,7 @@ def on_pubmsg_thread(self, c, e):
 	line = (e.arguments()[0])
 	line = otitiscomb.encodeLine(line)
 	nick = nm_to_n(e.source())
+	cloak = nm_to_h(e.source())
 	
 	wikipedia.output('%s > %s' % (nick, line))
 	
@@ -114,6 +115,10 @@ def on_pubmsg_thread(self, c, e):
 		'compare': {
 			'aliases': ['compare', 'comp', 'compara'],
 			'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
+			},
+		'create': {
+			'aliases': ['create',],
+			'description': u'Crea un artículo con el contenido indicado',
 			},
 		'demoda': {
 			'aliases': ['demoda', 'de_moda', 'moda', 'hot'],
@@ -179,6 +184,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['mant', 'mantenimiento'],
 			'description': u'Muestra el mantenimiento actual o de una fecha concreta',
 			},
+		'modify': {
+			'aliases': ['modify'],
+			'description': u'...',
+			},
 		'preg': {
 			'aliases': ['preg', 'pregunta', 'nuevapregunta'],
 			'description': u'Añade una nueva pregunta al wikitrivial. El formato es: pregunta;;respuesta1;respuesta2;respuesta3... Las respuestas no son sensibles a mayúsculas o minúsculas',
@@ -239,8 +248,12 @@ def on_pubmsg_thread(self, c, e):
 	
 	#qué comando ha introducido?
 	if cmd in cmds['info']['aliases']:
+		if otitisglobals.cloaks.has_key(cloak):
+			nick=otitisglobals.cloaks[cloak]
+		elif otitisglobals.nicks.has_key(nick):
+			nick=otitisglobals.nicks[nick]
 		[lang, family, user]=otitiscomb.splitParameter(nick, args)
-		user=re.sub(ur"(User|Usuario)\:", ur"", user) #por si acaso alguien mete !info User:Emijrp
+		user=re.sub(ur"(User|Usuario)\:", ur"", user) #por si acaso alguien mete !info User:Loquesea
 		msg=error=u""
 		ediciones=otitiscomb.loadUserEdits(user, lang, family)
 		if ediciones>=0:
@@ -311,6 +324,7 @@ def on_pubmsg_thread(self, c, e):
 			else:
 				msg=u"http://%s.%s.org tiene %d artículos. Se han creado %d en las últimas %d horas." % (lang, family, good, good_last, hours)
 		else:
+			good_last_es=otitiscomb.getNewPagesLastXHours('es', family, hours)
 			good_es=otitiscomb.getProjectStats('es', family)['good']
 			good_diff=good-good_es
 			good_diff_text=''
@@ -318,7 +332,26 @@ def on_pubmsg_thread(self, c, e):
 				good_diff_text=u'%d menos' % abs(good_diff)
 			else:
 				good_diff_text=u'%d más' % abs(good_diff)
-			msg=u"http://%s.%s.org tiene %d artículos (%s que %s en español). Se han creado %d en las últimas %d horas. Puedes ver sus últimas creaciones en: http://%s.%s.org/wiki/Special:Newpages" % (lang, family, good, good_diff_text, family, good_last, hours, lang, family)
+			good_last_diff=good_last_es-good_last
+			if good_last_diff<0:
+				good_last_diff_text=u'%d menos' % abs(good_last_diff)
+			else:
+				good_last_diff_text=u'%d más' % abs(good_last_diff)
+			msg=u"http://%s.%s.org tiene %d artículos (%s que %s en español). Se han creado %d en las últimas %d horas. Puedes ver sus últimas creaciones en: http://%s.%s.org/wiki/Special:Newpages. Wikipedia en español ha creado %d artículos (%s)." % (lang, family, good, good_diff_text, family, good_last, hours, lang, family, good_last_es, good_last_diff_text)
+			if good>=good_es:
+				if good_last>=good_last_es:
+					msg+=u" Al ritmo actual *nunca les alcanzaremos*."
+				else:
+					when=(good-good_es)/(good_last_es-good_last)
+					when_date=datetime.datetime.today()+datetime.timedelta(days=when)
+					msg+=u" Al ritmo actual *les alcanzaremos en %d días* (%s)." % (when, when_date.strftime('%d %b %Y'))
+			else:
+				if good_last>=good_last_es:
+					when=(good_es-good)/(good_last-good_last_es)
+					when_date=datetime.datetime.today()+datetime.timedelta(days=when)
+					msg+=u" Al ritmo actual *nos alcanzarán en %d días* (%s)." % (when, when_date.strftime('%d %b %Y'))
+				else:
+					msg+=u" Al ritmo actual *nunca nos alcanzarán*."
 		if error:
 			c.privmsg(self.channel, error.encode('utf-8'))
 		elif msg:
@@ -378,6 +411,19 @@ def on_pubmsg_thread(self, c, e):
 		if msg:
 			msg+=u"..."
 			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['create']['aliases']:
+		msg=u""
+		if cloak=='84.125.177.182.dyn.user.ono.com':
+			pagetitle=args[1]
+			contain=' '.join(args[2:])
+			page=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), pagetitle)
+			if page.exists():
+				msg=u"\"%s\" ya existe. Utiliza el comando !modify" % pagetitle
+			else:
+				page.put(contain, u'BOT - Creando página desde IRC')
+				#msg=u"No existe"
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['demoda']['aliases']:
 		parametro=24
 		if len(args)>=2:
@@ -387,7 +433,6 @@ def on_pubmsg_thread(self, c, e):
 		msg=u""
 		destcat=catlib.Category(wikipedia.Site('es', 'wikipedia'), u"Categoría:Wikipedia:Borrar (definitivo)")
 		destnum=len(destcat.articlesList())
-		print destcat.articlesList()
 		if destnum>0:
 			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s_" % (destnum, re.sub(' ', '_', destcat.title()))
 		else:
@@ -681,6 +726,14 @@ class BOT(SingleServerIRCBot):
 	
 	def on_pubmsg(self, c, e):
 		thread.start_new_thread(on_pubmsg_thread,(self, c, e,))
+	
+	def on_kick(self, c, e):
+		time.sleep(3)
+		nick = nm_to_n(e.source())
+		c.join(self.channel)
+		if e.arguments()[0]==self.nickname:
+			msg=u"To el tum tum chis de %s" % nick
+			c.privmsg(self.channel, msg.encode('utf-8'))
 
 def main():
 	""" Crea un objeto BOT y lo lanza """
