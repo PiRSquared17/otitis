@@ -38,6 +38,9 @@
 # !new
 # ediciones borradas en !info manuelt15
 # !art pt que muestre si al ritmo actual nos adelantan y cuando, o nunca
+# !avbot stats de avbot
+# !rc !diff !hist !newusers !fa !ga http://es.wikipedia.org/wiki/Wikipedia:Art%C3%ADculos_destacados/%C3%8Dndice
+# !biblio biblios disponibles en el canal
 
 """ External modules """
 """ Python modules """
@@ -389,8 +392,13 @@ def on_pubmsg_thread(self, c, e):
 		cabtemplate=wikipedia.Page(otitisglobals.preferences['site'], u'Plantilla:ResumenCandidaturasBibliotecario')
 		#| 1 || [[Usuario:Nicop|Nicop]] || [[Wikipedia:Candidaturas a bibliotecario/Nicop|Ver]] || 72 || 2 || style='background-color:#D0F0C0;' | 97% 
 		m=re.compile(ur"(?im)^\| *\d+ \|\| *\[\[Usuario\:(?P<user>[^\|]*?)\|[^\]]+?\]\] *\|\| *\[\[(?P<cab>.+?)\|Ver\]\] *\|\| *(?P<afavor>\d+) *\|\| *(?P<encontra>\d+) *\|\|[^\|]+?\| *(?P<porcentaje>[\d\.]+)").finditer(cabtemplate.get())
+		cont=0
 		for i in m:
 			msg=u"\"User:%s\": A favor (%s), En contra (%s), Porcentaje favorables (%s%%). Detalles: http://es.wikipedia.org/wiki/%s" % (i.group('user'), i.group('afavor'), i.group('encontra'), i.group('porcentaje'), re.sub(' ', '_', i.group('cab')))
+			c.privmsg(self.channel, msg.encode('utf-8'))
+			cont+=1
+		if not cont:
+			msg=u"No hay Candidaturas A Bibliotecario en curso"
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['compare']['aliases']:
 		[lang, family, pagina]=otitiscomb.splitParameter(u'Jimmy Wales', args)
