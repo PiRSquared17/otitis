@@ -41,6 +41,8 @@
 # !avbot stats de avbot
 # !rc !diff !hist !newusers !fa !ga http://es.wikipedia.org/wiki/Wikipedia:Art%C3%ADculos_destacados/%C3%8Dndice
 # !biblio biblios disponibles en el canal
+# !info para ips
+# !random !aleatorio !alea !rand
 
 """ External modules """
 """ Python modules """
