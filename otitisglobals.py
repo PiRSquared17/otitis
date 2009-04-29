@@ -110,5 +110,7 @@ cloaks={
 }
 global nicks
 nicks={
+	u'es_Airwolf': u'Airwolf',
+	u'morza1': u'Morza',
 	u'Nixon-': u'Nixón',
 }
