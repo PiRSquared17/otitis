@@ -229,6 +229,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['visitas', 'visit', 'visits', 'vis', 'v'],
 			'description': u'Muestra el número de visitas de cierta página. Está sujeto a la disponibilidad de http://stats.grok.se',
 			},
+		'who': {
+			'aliases': ['who', 'whois', 'quien', 'quienes'],
+			'description': u'Muestra información acerca de los usuarios presentes en el canal',
+			},
 		'all': {
 			'aliases': ['all', 'cmd', 'cmds', 'comando', 'comandos'],
 			'description': u'Muestra todos los comandos existentes',
@@ -325,7 +329,7 @@ def on_pubmsg_thread(self, c, e):
 		good_last=otitiscomb.getNewPagesLastXHours(lang, family, hours)
 		if lang=='es':
 			if family=='wikipedia':
-				msg=u"http://%s.%s.org tiene %d artículos. Se han creado %d en las últimas %d horas. Puedes crear un artículo solicitado (http://es.wikipedia.org/wiki/Wikipedia:Artículos_solicitados)" % (lang, family, good, good_last, hours)
+				msg=u"http://%s.%s.org tiene %d artículos. Se han creado %d en las últimas %d horas. Puedes ver las últimas creaciones en: http://%s.%s.org/wiki/Special:Newpages. Puedes crear un artículo solicitado (http://es.wikipedia.org/wiki/Wikipedia:Artículos_solicitados)" % (lang, family, good, good_last, hours, lang, family)
 			else:
 				msg=u"http://%s.%s.org tiene %d artículos. Se han creado %d en las últimas %d horas." % (lang, family, good, good_last, hours)
 		else:
@@ -676,6 +680,10 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 		elif error:
 			c.privmsg(self.channel, error.encode('utf-8'))
+	elif cmd in cmds['who']['aliases']:
+		who={}
+		print c.who('#wikipedia-es')
+		print c.who('wikipedia-es')
 	elif cmd in cmds['readme']['aliases']:
 		msg=u"(C) 2009 - emijrp (Harriet & Vostok Corporation). Licencia GPL. Código: http://code.google.com/p/otitis/. Han aportado algo (ideas, bugs, sugerencias): Taichi, Paintman, Chabacano, sabbut, Dferg, Drini, ejmeza, Nixón"
 		c.privmsg(self.channel, msg.encode('utf-8'))
@@ -720,8 +728,8 @@ class BOT(SingleServerIRCBot):
 		""" Se une al canal de IRC de Cambios recientes """
 		""" Joins to IRC channel with Recent changes """
 		
-		thread.start_new_thread(otitiscomb.periodicFunctions,(c, self.channel,))
 		c.join(self.channel)
+		#thread.start_new_thread(otitiscomb.periodicFunctions,(c, self.channel,))
 	
 	def on_privmsg(self, c, e):
 		line = (e.arguments()[0])
