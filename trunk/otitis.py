@@ -205,6 +205,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['raro', 'odd', 'peculiar'],
 			'description': u'Muestra un artículo curioso al azar.',
 			},
+		'revisar': {
+			'aliases': ['revisar', 'rev'],
+			'description': u'Muestra artículos marcados con {{revisar}}.',
+			},
 		#'stats': {
 		#	'aliases': ['stats', 'statistics'],
 		#	'description': u'Muestra algunas estadísticas de Wikipedia',
@@ -238,7 +242,7 @@ def on_pubmsg_thread(self, c, e):
 			'description': u'Muestra todos los comandos existentes',
 			},
 		'help': {
-			'aliases': ['help', 'ayuda'],
+			'aliases': ['help', 'ayuda', 'ayudame', 'f1'],
 			'description': u'Esta es la ayuda de Otitis. Para ver los comandos existentes escribe !all. Para saber más sobre un comando usa !help comando',
 			},
 		'author': {
@@ -595,6 +599,16 @@ def on_pubmsg_thread(self, c, e):
 		[article, line]=raros[random.randint(0,len(raros))]
 		line=otitiscomb.cleanWikiSyntax(line)
 		msg=u"Artículo curioso/raro al azar: \"%s\"%s Ver en http://es.wikipedia.org/wiki/%s" % (article, line, re.sub(' ', '_', article))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['revisar']['aliases']:
+		msg=u""
+		revcat=catlib.Category(wikipedia.Site('es', 'wikipedia'), u"Categoría:Wikipedia:Revisar")
+		revnum=len(revcat.articlesList())
+		if revnum>0:
+			msg=u"*Hay que revisar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/Categoría:Wikipedia:Revisar" % (revnum)
+		else:
+			msg=u"*No hay que revisar* ninguna página. Todo en orden en http://es.wikipedia.org/wiki/Categoría:Wikipedia:Revisar"
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['juego']['aliases']:
