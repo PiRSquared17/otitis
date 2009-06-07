@@ -448,9 +448,9 @@ def on_pubmsg_thread(self, c, e):
 		destcat=catlib.Category(wikipedia.Site('es', 'wikipedia'), u"Categoría:Wikipedia:Borrar (definitivo)")
 		destnum=len(destcat.articlesList())
 		if destnum>0:
-			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s_" % (destnum, re.sub(' ', '_', destcat.title()))
+			msg=u"*Hay que borrar* %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/WP:BORRAR" % (destnum)
 		else:
-			msg=u"*No hay que borrar* ninguna página. Todo en orden en http://es.wikipedia.org/wiki/%s_" % (re.sub(' ', '_', destcat.title()))
+			msg=u"*No hay que borrar* ninguna página. Todo en orden en http://es.wikipedia.org/wiki/WP:BORRAR"
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['dpd']['aliases']:
