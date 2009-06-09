@@ -122,7 +122,7 @@ def on_pubmsg_thread(self, c, e):
 			'description': u'Compara un artículo con sus homólogos en otras Wikipedias',
 			},
 		'create': {
-			'aliases': ['create',],
+			'aliases': ['create', 'crear'],
 			'description': u'Crea un artículo con el contenido indicado',
 			},
 		'demoda': {
@@ -196,6 +196,10 @@ def on_pubmsg_thread(self, c, e):
 		'preg': {
 			'aliases': ['preg', 'pregunta', 'nuevapregunta'],
 			'description': u'Añade una nueva pregunta al wikitrivial. El formato es: pregunta;;respuesta1;respuesta2;respuesta3... Las respuestas no son sensibles a mayúsculas o minúsculas',
+			},
+		'premio': {
+			'aliases': ['premio', 'prem', 'muro', 'murobot', 'muro bot'],
+			'description': u'Elige una redirección de Muro Bot al azar.',
 			},
 		'rank': {
 			'aliases': ['rank', 'ranking', 'stat', 'stats', 'statistics'],
@@ -439,7 +443,7 @@ def on_pubmsg_thread(self, c, e):
 				msg=u"\"%s\" ya existe. Utiliza el comando !modify" % pagetitle
 			else:
 				page.put(contain, u'BOT - Creando página desde IRC')
-				#msg=u"No existe"
+				msg=u"Se ha creado desde IRC la página http://es.wikipedia.org/wiki/%s" % (re.sub(' ', '_', pagetitle))
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['demoda']['aliases']:
@@ -576,6 +580,20 @@ def on_pubmsg_thread(self, c, e):
 				msg=u"*Hay que hacer mantenimiento* en %d páginas. Por favor, comprueba http://es.wikipedia.org/wiki/%s" % (mantnum, re.sub(' ', '_', mantcat.title()))
 			else:
 				msg=u"*No hay mantenimiento* que hacer. Todo en orden en http://es.wikipedia.org/wiki/%s" % (re.sub(' ', '_', mantcat.title()))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['premio']['aliases']:
+		msg=u""
+		page=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), u'Wikipedia:Ranking de creaciones/Muro Bot/%s' % str(random.randint(1,124)))
+		l=page.get().splitlines()[1:]
+		v=[u'premiado', u'agraciado', u'galardonado']
+		alea=random.randint(0, len(l)-1)
+		num=l[alea].split(")")[0].split("*")[1]
+		red=l[alea].split("]]")[0].split("[[")[1]
+		redpage=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), red)
+		if redpage.exists() and redpage.isRedirectPage():
+			redtargettitle=redpage.getRedirectTarget().title()
+			msg=u"Ud. ha sido %s con la redirección #%s de Muro Bot: \"%s\" -> \"%s\". http://es.wikipedia.org/w/index.php?title=%s&redirect=no" % (v[random.randint(0,len(v)-1)], num, redpage.title(), redtargettitle, re.sub(' ', '_', redpage.title()))
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['rank']['aliases']:
