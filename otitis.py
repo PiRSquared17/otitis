@@ -125,6 +125,10 @@ def on_pubmsg_thread(self, c, e):
 			'aliases': ['create', 'crear'],
 			'description': u'Crea un artículo con el contenido indicado',
 			},
+		'cuantoqueda': {
+			'aliases': ['cuantoqueda', 'cuantofalta'],
+			'description': u'¿Cuanto falta para llegar al artículo número X?',
+			},
 		'demoda': {
 			'aliases': ['demoda', 'de_moda', 'moda', 'hot'],
 			'description': u'Muestra las páginas más editadas de las últimas horas',
@@ -164,6 +168,10 @@ def on_pubmsg_thread(self, c, e):
 		'global': {
 			'aliases': ['global', 'globalstats', 'globales'],
 			'description': u'Muestra estadísticas globales',
+			},
+		'harriet': {
+			'aliases': ['harriet'],
+			'description': u'Muestra imágenes de harriets',
 			},
 		'info': {
 			'aliases': ['info', 'uinfo', 'userinfo', 'user', 'usuario'],
@@ -361,12 +369,12 @@ def on_pubmsg_thread(self, c, e):
 				else:
 					when=(good-good_es)/(good_last_es-good_last)
 					when_date=datetime.datetime.today()+datetime.timedelta(days=when)
-					msg+=u" Al ritmo actual *les alcanzaremos en %d días* (%s)." % (when, when_date.strftime('%d %b %Y'))
+					msg+=u" Al ritmo actual *les alcanzaremos en %d días*, %s." % (when, when_date.strftime('a las %H:%M:%S (UTC) del %d/%b/%Y'))
 			else:
 				if good_last>=good_last_es:
 					when=(good_es-good)/(good_last-good_last_es)
 					when_date=datetime.datetime.today()+datetime.timedelta(days=when)
-					msg+=u" Al ritmo actual *nos alcanzarán en %d días* (%s)." % (when, when_date.strftime('%d %b %Y'))
+					msg+=u" Al ritmo actual *nos alcanzarán en %d días*, %s." % (when, when_date.strftime('a las %H:%M:%S (UTC) del %d/%b/%Y'))
 				else:
 					msg+=u" Al ritmo actual *nunca nos alcanzarán*."
 		if error:
@@ -444,6 +452,22 @@ def on_pubmsg_thread(self, c, e):
 			else:
 				page.put(contain, u'BOT - Creando página desde IRC')
 				msg=u"Se ha creado desde IRC la página http://es.wikipedia.org/wiki/%s" % (re.sub(' ', '_', pagetitle))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['cuantoqueda']['aliases']:
+		msg=u""
+		parametro=500000
+		hours=24
+		if len(args)>=2:
+			parametro=int(args[1])
+		good_es=otitiscomb.getProjectStats('es', 'wikipedia')['good']
+		if parametro<=good_es:
+			msg=u"Ya hemos alcanzado la cifra de %d artículos" % parametro
+		else:
+			good_last_es=otitiscomb.getNewPagesLastXHours('es', 'wikipedia', hours)
+			when=(parametro-good_es)/good_last_es
+			when_date=datetime.datetime.today()+datetime.timedelta(days=when)
+			msg=u"Al ritmo actual (%d arts/día) alcanzaremos los %d artículos *en %d días*, %s." % (good_last_es, parametro, when, when_date.strftime('a las %H:%M:%S (UTC) del %d/%b/%Y'))
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['demoda']['aliases']:
@@ -547,6 +571,12 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['global']['aliases']:
 		otitiscomb.getGlobalStats(c, self.channel)
+	elif cmd in cmds['harriet']['aliases']:
+		harrietscat=catlib.Category(wikipedia.Site('commons', 'commons'), u'Category:Turtles')
+		harriets=harrietscat.articlesList()
+		msg=u"Marchando un Harriet! http://commons.wikimedia.org/wiki/%s" % (re.sub(" ", "_", harriets[random.randint(0, len(harriets)-1)].title()))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['jimbo']['aliases']:
 		otitiscomb.famousEditor(u'Jimbo Wales', c, self.channel)
 	elif cmd in cmds['lemario']['aliases']:
