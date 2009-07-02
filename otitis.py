@@ -459,7 +459,10 @@ def on_pubmsg_thread(self, c, e):
 		parametro=500000
 		hours=24
 		if len(args)>=2:
-			parametro=int(args[1])
+			p=args[1]
+			p=re.sub(ur"(?i)m", "000000", p)
+			p=re.sub(ur"(?i)k", "000", p)
+			parametro=int(p)
 		good_es=otitiscomb.getProjectStats('es', 'wikipedia')['good']
 		if parametro<=good_es:
 			msg=u"Ya hemos alcanzado la cifra de %d artículos" % parametro
