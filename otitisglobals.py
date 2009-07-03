@@ -50,6 +50,7 @@ preferences = {
 	},
 	'context':       ur'[ \@\º\ª\·\#\~\$\<\>\/\(\)\'\-\_\:\;\,\.\r\n\?\!\¡\¿\"\=\[\]\|\{\}\+\&]',
 	'msg':           {},
+	'spy':           False,
 }
 
 """ Header message """
@@ -114,3 +115,8 @@ nicks={
 	u'morza1': u'Morza',
 	u'Nixon-': u'Nixón',
 }
+
+global existFile
+existFile = 'otitisiexist.txt'
+global pidFile
+pidFile = 'otitismypid.txt'

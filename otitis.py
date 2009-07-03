@@ -369,12 +369,12 @@ def on_pubmsg_thread(self, c, e):
 				else:
 					when=(good-good_es)/(good_last_es-good_last)
 					when_date=datetime.datetime.today()+datetime.timedelta(days=when)
-					msg+=u" Al ritmo actual *les alcanzaremos en %d días*, %s." % (when, when_date.strftime('a las %H:%M:%S (UTC) del %d/%b/%Y'))
+					msg+=u" Al ritmo actual *les alcanzaremos en %d días*, %s." % (when, when_date.strftime('el %d/%b/%Y'))
 			else:
 				if good_last>=good_last_es:
 					when=(good_es-good)/(good_last-good_last_es)
 					when_date=datetime.datetime.today()+datetime.timedelta(days=when)
-					msg+=u" Al ritmo actual *nos alcanzarán en %d días*, %s." % (when, when_date.strftime('a las %H:%M:%S (UTC) del %d/%b/%Y'))
+					msg+=u" Al ritmo actual *nos alcanzarán en %d días*, %s." % (when, when_date.strftime('el %d/%b/%Y'))
 				else:
 					msg+=u" Al ritmo actual *nunca nos alcanzarán*."
 		if error:
@@ -443,7 +443,7 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['create']['aliases']:
 		msg=u""
-		if cloak=='84.125.177.182.dyn.user.ono.com':
+		if cloak=='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx':
 			pagetitle=args[1]
 			contain=' '.join(args[2:])
 			page=wikipedia.Page(wikipedia.Site('es', 'wikipedia'), pagetitle)
@@ -470,7 +470,7 @@ def on_pubmsg_thread(self, c, e):
 			good_last_es=otitiscomb.getNewPagesLastXHours('es', 'wikipedia', hours)
 			when=(parametro-good_es)/good_last_es
 			when_date=datetime.datetime.today()+datetime.timedelta(days=when)
-			msg=u"Al ritmo actual (%d arts/día) alcanzaremos los %d artículos *en %d días*, %s." % (good_last_es, parametro, when, when_date.strftime('a las %H:%M:%S (UTC) del %d/%b/%Y'))
+			msg=u"Al ritmo actual (%d arts/día) alcanzaremos los %d artículos *en %d días*, %s." % (good_last_es, parametro, when, when_date.strftime('el %d/%b/%Y'))
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['demoda']['aliases']:
@@ -794,6 +794,8 @@ class BOT(SingleServerIRCBot):
 		""" Joins to IRC channel with Recent changes """
 		
 		c.join(self.channel)
+		if otitisglobals.preferences['spy']:
+			thread.start_new_thread(otitiscomb.spyFunctions,(c, self.channel,))
 		#thread.start_new_thread(otitiscomb.periodicFunctions,(c, self.channel,))
 	
 	def on_privmsg(self, c, e):
@@ -821,6 +823,27 @@ class BOT(SingleServerIRCBot):
 def main():
 	""" Crea un objeto BOT y lo lanza """
 	""" Creates and launches a bot object """
+	
+	if os.path.isfile(otitisglobals.existFile):
+		os.system("rm %s" % otitisglobals.existFile)
+		wikipedia.output(u"Eliminado fichero %s" % otitisglobals.existFile)
+		sys.exit()
+	else:
+		try:
+			PID=open(otitisglobals.pidFile, 'r')
+			oldpid=PID.read(str(os.getpid()))
+			PID.close()
+			os.system("kill -9 %s" % oldpid)
+		except:
+			wikipedia.output(u"Hubo un error al intentar matar el proceso anterior")
+		
+		#Writing current PID
+		PID=open(otitisglobals.pidFile, 'w')
+		PID.write(str(os.getpid()))
+		PID.close()
+	
+	#launching existence file generator
+	thread.start_new_thread(otitiscomb.existenceFile,())
 	
 	#Starting bot...
 	bot = BOT()
