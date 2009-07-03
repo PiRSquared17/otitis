@@ -626,8 +626,8 @@ def whoIsItsAuthor(lang, family, pagina, c, channel):
 
 def existenceFile():
 	while True:
-		if not os.path.isfile(avbotglobals.existFile):
-			existFile=open(avbotglobals.existFile, 'w')
+		if not os.path.isfile(otitisglobals.existFile):
+			existFile=open(otitisglobals.existFile, 'w')
 			existFile.write(str("hi"))
 			existFile.close()
 		time.sleep(60) # debe ser menor que el time del cron / 2
