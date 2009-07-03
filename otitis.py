@@ -831,7 +831,7 @@ def main():
 	else:
 		try:
 			PID=open(otitisglobals.pidFile, 'r')
-			oldpid=PID.read(str(os.getpid()))
+			oldpid=PID.read()
 			PID.close()
 			os.system("kill -9 %s" % oldpid)
 		except:
