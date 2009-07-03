@@ -97,7 +97,9 @@ def getParameters():
 				otitisglobals.preferences['testmode'] = wikipedia.input(u'Please enter test mode (True or False):')
 			else:
 				otitisglobals.preferences['testmode'] = arg[10:]
-			obligatory-=1
+		elif arg.startswith('-spy'):
+			if len(arg) == 4:
+				otitisglobals.preferences['spy'] = True
 	
 	if obligatory:
 		wikipedia.output(u"Not all obligatory parameters were found. Please, check (*) parameters.")
@@ -468,6 +470,12 @@ def periodicFunctions(c, channel):
 		
 		time.sleep(1)
 
+def spyFunctions(c, channel):
+	while True:
+		msg=u"c"
+		c.privmsg(channel, msg.encode('utf-8'))
+		time.sleep(10)
+
 def getWikipediaStats(lang):
 	dic={}
 	
@@ -615,3 +623,11 @@ def whoIsItsAuthor(lang, family, pagina, c, channel):
 		c.privmsg(channel, error.encode('utf-8'))
 	elif msg:
 		c.privmsg(channel, msg.encode('utf-8'))
+
+def existenceFile():
+	while True:
+		if not os.path.isfile(avbotglobals.existFile):
+			existFile=open(avbotglobals.existFile, 'w')
+			existFile.write(str("hi"))
+			existFile.close()
+		time.sleep(60) # debe ser menor que el time del cron / 2
