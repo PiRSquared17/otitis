@@ -810,6 +810,15 @@ class BOT(SingleServerIRCBot):
 		f.close()
 	
 	def on_pubmsg(self, c, e):
+		line = (e.arguments()[0])
+		line = otitiscomb.encodeLine(line)
+		nick = nm_to_n(e.source())
+		
+		f=open('logcanal.txt', 'a')
+		timestamp=time.strftime('%X %x')
+		line=timestamp+' '+nick+' > '+line+'\n'
+		f.write(line.encode('utf-8'))
+		f.close()
 		thread.start_new_thread(on_pubmsg_thread,(self, c, e,))
 	
 	def on_kick(self, c, e):
