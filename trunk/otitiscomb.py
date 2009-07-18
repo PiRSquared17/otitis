@@ -601,11 +601,6 @@ def splitParameter(defecto, args):
 		if not rest:
 			rest=defecto
 	
-	print 2
-	print lang
-	print family
-	print rest
-	
 	return lang, family, rest
 
 def whoIsItsAuthor(lang, family, pagina, c, channel):
