@@ -456,14 +456,17 @@ def on_pubmsg_thread(self, c, e):
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['cuantoqueda']['aliases']:
 		msg=u""
-		parametro=500000
+		good_es=otitiscomb.getProjectStats('es', 'wikipedia')['good']
+		factor=100000
+		parametro=(good_es/factor+1)*factor
 		hours=24
 		if len(args)>=2:
 			p=args[1]
+			p=re.sub(ur"(?i)\.", "", p)
+			p=re.sub(ur"(?i)g", "000000000", p)
 			p=re.sub(ur"(?i)m", "000000", p)
 			p=re.sub(ur"(?i)k", "000", p)
 			parametro=int(p)
-		good_es=otitiscomb.getProjectStats('es', 'wikipedia')['good']
 		if parametro<=good_es:
 			msg=u"Ya hemos alcanzado la cifra de %d artículos" % parametro
 		else:
