@@ -138,6 +138,42 @@ def loadUserEdits(author, lang, family):
 	except:
 		return -1
 
+def lastUserAppearance(author, lang, family):
+	author_=re.sub(' ', '_', author)
+	
+	langs=otitisglobals.preferences['wikilangs']
+	families=['commons', 'wiktionary', 'wikisource', 'wikinews', 'wikibooks', 'wikiquote', 'wikispecies', 'meta', 'wikiversity']
+	try:
+		site=wikipedia.Site(lang, family)
+		rawdata=site.getUrl("/w/api.php?action=query&list=usercontribs&ucuser=%s&ucprop=timestamp&uclimit=1&format=xml" % author_.encode('utf-8'))
+		if re.search(u"timestamp", rawdata):
+			m=re.compile(ur' timestamp="(?P<timestamp>\d\d\d\d-\d\d-\d\d)T').finditer(rawdata)
+			for i in m:
+				return i.group('timestamp')
+		else:
+			return ""
+	except:
+		return ""
+
+def lastUserEdit(author, lang, family):
+	author_=re.sub(' ', '_', author)
+	
+	langs=otitisglobals.preferences['wikilangs']
+	families=['commons', 'wiktionary', 'wikisource', 'wikinews', 'wikibooks', 'wikiquote', 'wikispecies', 'meta', 'wikiversity']
+	try:
+		site=wikipedia.Site(lang, family)
+		rawdata=site.getUrl("/w/api.php?action=query&list=usercontribs&ucuser=%s&ucprop=ids&uclimit=1&format=xml" % author_.encode('utf-8'))
+		if re.search(u"revid", rawdata):
+			m=re.compile(ur' revid="(?P<revid>\d+)"').finditer(rawdata)
+			for i in m:
+				return i.group('revid')
+		else:
+			return ""
+	except:
+		return ""
+
+
+
 def existsLanguage(lang):
 	return lang.lower() in otitisglobals.preferences['wikilangs']
 
