@@ -43,6 +43,8 @@
 # !biblio biblios disponibles en el canal
 # !info para ips
 # !random !aleatorio !alea !rand
+# !sinmatdrodes, días desde que hizo la última edición un usuario
+# !sugus, petición de comandos
 
 """ External modules """
 """ Python modules """
@@ -94,7 +96,7 @@ def on_pubmsg_thread(self, c, e):
 	#die*, info, tam, art, en-es*, es-en*, orto*, drae*, [[]]*, {{}}*, busca-es*, busca-en*, busca-ca*, busca-de*, busca-fr*, busca-it*, busca-co*, busca-go*, mantenimiento*, tonteria*, mes*, galletita, =*, hora*, pi*, e*, wikipedia*, google*, help*, all*
 	cmds={
 		'art': {
-			'aliases': ['art', 'arts', 'pene'],
+			'aliases': ['art', 'arts', 'pene', 'atr', 'artt'],
 			'description': u'Muestra el número de artículos de cierta Wikipedia',
 			},
 		'ainfo': {
@@ -102,11 +104,11 @@ def on_pubmsg_thread(self, c, e):
 			'description': u'Muestra información sobre una página',
 			},
 		'angela': {
-			'aliases': ['angela', 'angelabeesley', 'beesley'],
+			'aliases': ['angela', 'angelabeesley', 'beesley', 'ang'],
 			'descripcion': u'Muestra información actual sobre Angela Beesley, co-fundadora de Wikia.com',
 			},
 		'botopedia': {
-			'aliases': ['botopedia', 'botoxpedia', 'boto'],
+			'aliases': ['botopedia', 'botoxpedia', 'boto', 'botoperdia'],
 			'description': u'Analiza conductas de botopedia en el idioma y proyectos seleccionados',
 			},
 		'brion': {
@@ -160,6 +162,10 @@ def on_pubmsg_thread(self, c, e):
 		'encarta': {
 			'aliases': ['encarta', 'enc', 'progresoencarta', 'pencarta', 'penc'],
 			'description': u'Muestra cuántos artículos de la Encarta tenemos',
+			},
+		'fap': {
+			'aliases': ['fap', 'fapfap', 'fapfapfap', 'gayola', 'paja', 'pajilla', 'sex', 'sexo', 'manuela', 'manola'],
+			'description': u'Necesidades biológicas',
 			},
 		'flames': {
 			'aliases': ['flames', 'flame', 'disc', 'discu', 'polvorin', u'polvorín'],
@@ -225,6 +231,14 @@ def on_pubmsg_thread(self, c, e):
 		#	'aliases': ['stats', 'statistics'],
 		#	'description': u'Muestra algunas estadísticas de Wikipedia',
 		#	},
+		'sin': {
+			'aliases': ['sin', 'sefue'],
+			'descripcion': u'Muestra cuanto tiempo hace que se un usuario hizo su última edición',
+			},
+		'sugus': {
+			'aliases': ['sugus', 'sug', 'sugerencia', 'peticion', 'petición'],
+			'descripcion': u'Almacena una petición de nuevo comando que será revisada cuando el controlador del bot tenga tiempo',
+			},
 		'tim': {
 			'aliases': ['tim', 'timstarling', 'starling'],
 			'descripcion': u'Muestra información actual sobre Tim Starling, desarrollador de MediaWiki, creador de las parserFunctions',
@@ -278,7 +292,7 @@ def on_pubmsg_thread(self, c, e):
 		elif otitisglobals.nicks.has_key(nick):
 			nick=otitisglobals.nicks[nick]
 		[lang, family, user]=otitiscomb.splitParameter(nick, args)
-		user=re.sub(ur"(User|Usuario)\:", ur"", user) #por si acaso alguien mete !info User:Loquesea
+		user=re.sub(ur"(?i)(User|Usuario)\:", ur"", user) #por si acaso alguien mete !info User:Loquesea
 		msg=error=u""
 		ediciones=otitiscomb.loadUserEdits(user, lang, family)
 		if ediciones>=0:
@@ -565,6 +579,10 @@ def on_pubmsg_thread(self, c, e):
 			msg=u"Progreso Encarta: Tenemos el *%s%%* de los artículos de /Enciclopedia Encarta/. Detalles: http://es.wikipedia.org/wiki/Plantilla:ProgresoEncarta" % (i.group('total'))
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['fap']['aliases']:
+		msg=u"Tú mismo! http://commons.wikimedia.org/wiki/Category:Porn_actresses"
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['flames']['aliases']:
 		msg="Discusiones muy activas: "
 		flames=wikipedia.Page(otitisglobals.preferences['site'], u"Plantilla:DiscusionesActivas")
@@ -578,9 +596,11 @@ def on_pubmsg_thread(self, c, e):
 	elif cmd in cmds['global']['aliases']:
 		otitiscomb.getGlobalStats(c, self.channel)
 	elif cmd in cmds['harriet']['aliases']:
-		harrietscat=catlib.Category(wikipedia.Site('commons', 'commons'), u'Category:Turtles')
+		"""No lee las imágenes, solo artículos :(
+		harrietscat=catlib.Category(wikipedia.Site('commons', 'commons'), u'Category:Turtles in zoos')
 		harriets=harrietscat.articlesList()
-		msg=u"Marchando un Harriet! http://commons.wikimedia.org/wiki/%s" % (re.sub(" ", "_", harriets[random.randint(0, len(harriets)-1)].title()))
+		msg=u"Marchando un Harriet! http://commons.wikimedia.org/wiki/%s" % (re.sub(" ", "_", harriets[random.randint(0, len(harriets)-1)].title()))"""
+		msg=u"Elige tu Harriet preferido! http://commons.wikimedia.org/wiki/Category:Turtles_in_zoos"
 		if msg:
 			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['jimbo']['aliases']:
@@ -685,6 +705,29 @@ def on_pubmsg_thread(self, c, e):
 						time.sleep(3)
 						msg=u"Pregunta guardada con éxito. Ahora hay %d preguntas en el wikitrivial. Inícialo con !trivial" % (len(otitiscomb.loadQuestions()))
 		c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['sin']['aliases']:
+		user="Maldoror"
+		if len(args)>=2:
+			user=" ".join(args[1:])
+		lasttimestamp=otitiscomb.lastUserAppearance(user, 'es', 'wikipedia')
+		lastyear=int(lasttimestamp[0:4])
+		lastmonth=int(lasttimestamp[5:7])
+		lastday=int(lasttimestamp[8:10])
+		msg=u"%s hizo su última aparición el %s de %s de %s, hace %s días. http://es.wikipedia.org/w/index.php?oldid=%s&diff=prev" % (user, lastday, otitiscomb.number2month(lastmonth), lastyear, (datetime.date.today()-datetime.date(lastyear, lastmonth, lastday)).days, otitiscomb.lastUserEdit(user, 'es', 'wikipedia'))
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
+	elif cmd in cmds['sugus']['aliases']:
+		msg=u"Tu sugerencia ha sido almacenada, aunque no se sabe cuando será revisada."
+		timestamp=time.strftime('%X %x')
+		if len(args)>=2:
+			sugus=u"%s %s > %s\n" % (timestamp, nick, " ".join(args[1:]))
+			f=open("sugus.txt", "a")
+			f.write(sugus.encode("utf-8"))
+			f.close()
+		else:
+			msg=u"Debes introducir alguna descripción del comando que quieres que se implemente."
+		if msg:
+			c.privmsg(self.channel, msg.encode('utf-8'))
 	elif cmd in cmds['tim']['aliases']:
 		otitiscomb.famousEditor('Tim Starling', c, self.channel)
 	elif cmd in cmds['trivial']['aliases']:
@@ -780,7 +823,7 @@ def on_pubmsg_thread(self, c, e):
 		elif error:
 			c.notice(nick, error.encode('utf-8'))
 	else:
-		msg=u"Comando desconocido. Puedes ver una lista de comandos con !all"
+		msg=u"Comando desconocido. Puedes ver una lista de comandos con !all. Puedes sugerir un nuevo comando con !sugus. Por ejemplo !sugus hazme un comando que haga tortilla de patatas"
 		c.notice(nick, msg.encode('utf-8'))
 
 class BOT(SingleServerIRCBot):
