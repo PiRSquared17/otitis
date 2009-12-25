@@ -849,7 +849,7 @@ class BOT(SingleServerIRCBot):
 		line = otitiscomb.encodeLine(line)
 		nick = nm_to_n(e.source())
 		
-		f=open('privados.txt', 'a')
+		f=open(otitisglobals.privateLogFile, 'a')
 		timestamp=time.strftime('%X %x')
 		line=timestamp+' '+nick+' > '+line+'\n'
 		f.write(line.encode('utf-8'))
@@ -860,7 +860,7 @@ class BOT(SingleServerIRCBot):
 		line = otitiscomb.encodeLine(line)
 		nick = nm_to_n(e.source())
 		
-		f=open('logcanal.txt', 'a')
+		f=open(otitisglobals.logFile, 'a')
 		timestamp=time.strftime('%X %x')
 		line=timestamp+' '+nick+' > '+line+'\n'
 		f.write(line.encode('utf-8'))

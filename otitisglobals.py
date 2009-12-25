@@ -118,6 +118,10 @@ nicks={
 }
 
 global existFile
-existFile = 'otitisiexist.txt'
+existFile = 'otitisiexist-%s.txt' % preferences['channel']
 global pidFile
-pidFile = 'otitismypid.txt'
+pidFile = 'otitismypid-%s.txt' % preferences['channel']
+global logFile
+logFile = 'logcanal-%s.txt' % preferences['channel']
+global privateLogFile
+privateLogFile = 'privados-%s.txt' % preferences['channel']
