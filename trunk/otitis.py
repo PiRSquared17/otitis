@@ -427,10 +427,10 @@ def on_pubmsg_thread(self, c, e):
 	elif cmd in cmds['cab']['aliases']:
 		cabtemplate=wikipedia.Page(otitisglobals.preferences['site'], u'Plantilla:ResumenCandidaturasBibliotecario')
 		#| 1 || [[Usuario:Nicop|Nicop]] || [[Wikipedia:Candidaturas a bibliotecario/Nicop|Ver]] || 72 || 2 || style='background-color:#D0F0C0;' | 97% 
-		m=re.compile(ur"(?im)^\| *\d+ \|\| *\[\[Usuario\:(?P<user>[^\|]*?)\|[^\]]+?\]\] *\|\| *\[\[(?P<cab>.+?)\|Ver\]\] *\|\| *(?P<afavor>\d+) *\|\| *(?P<encontra>\d+) *\|\|[^\|]+?\| *(?P<porcentaje>[\d\.]+)").finditer(cabtemplate.get())
+		m=re.compile(ur"(?im)^\| *\d+ \|\| *\[\[Usuario\:(?P<user>[^\|]*?)\|[^\]]+?\]\] *\|\| *(?P<propuesto>.+?) *\|\| *(?P<afavor>\d+) *\|\| *(?P<encontra>\d+) *\|\|[^\|]+?\| *(?P<porcentaje>[\d\.]+)\% *\|\| *\[\[(?P<cab>.+?)\|Abierta\]\]").finditer(cabtemplate.get())
 		cont=0
 		for i in m:
-			msg=u"\"User:%s\": A favor (%s), En contra (%s), Porcentaje favorables (%s%%). Detalles: http://es.wikipedia.org/wiki/%s" % (i.group('user'), i.group('afavor'), i.group('encontra'), i.group('porcentaje'), re.sub(' ', '_', i.group('cab')))
+			msg=u"\"User:%s\": A favor (%s), En contra (%s), Porcentaje favorables (%s%%). Propuesto por: %s. Detalles: http://es.wikipedia.org/wiki/%s" % (i.group('user'), i.group('afavor'), i.group('encontra'), i.group('porcentaje'), i.group('propuesto'), re.sub(' ', '_', i.group('cab')))
 			c.privmsg(self.channel, msg.encode('utf-8'))
 			cont+=1
 		if not cont:
