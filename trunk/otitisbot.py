@@ -10,24 +10,62 @@ import random
 import socket
 import sys
 import time
+import urllib
 
 conn = ''
 botnick = 'otitis%d' % (random.randint(1000,9999))
+lang = 'es'
+family = 'wikipedia'
 server = 'irc.freenode.net'
-channel = '#wikipedia-es-testing'
+channel = '#%s-%s-testing' % (family, lang)
 
 preferences = {}
 preferences['log'] = False
 
+commands = {
+    'en': {
+        'date': {
+            'aliases': ['date', 'd', 'time', 't', 'datetime', 'dt'],
+            'description': u"Show the current time and date",
+            },
+        'stats': {
+            'aliases': ['stats', 's', 'pages', 'pags', 'p'],
+            'description': u"Show the current stats",
+            },
+        },
+    'es': {
+        'date': {
+            'aliases': ['fecha', 'hora'],
+            'description': u"Muestra la hora y la fecha actuales",
+            },
+        'stats': {
+            'aliases': [u'estadísticas', 'estadisticas', u'páginas', 'paginas'],
+            'description': u"Show the current stats",
+            },
+        },
+}
+
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 
-def p(target=channel, msg=""):
-    conn.send('PRIVMSG %s :%s\r\n' % (target, msg))
+def p(target=channel, nick="", msg=""):
+    if msg:
+        if nick:
+            conn.send('PRIVMSG %s :%s> %s\r\n' % (target, nick, msg))
+        else:
+            conn.send('PRIVMSG %s :%s\r\n' % (target, msg))
 
-def do(cmd, params):
+def do(nick, cmd, params):
     cmd = cmd.lower()
-    if cmd in ['date', 'time', 'datetime']:
-        p(msg=time.strftime('%Y-%m-%d %H:%M:%S'))
+    if cmd in commands['en']['date']['aliases']+commands[lang]['date']['aliases']:
+        p(nick=nick, msg=time.strftime('%Y-%m-%d %H:%M:%S'))
+    elif cmd in commands['en']['stats']['aliases']+commands[lang]['stats']['aliases']:
+        url = "http://%s.%s.org/wiki/Special:Statistics?action=raw" % (lang, family)
+        try:
+            f = urllib.urlopen(url);raw = f.read();f.close()
+            msg = ', '.join(raw.split(';'))
+        except:
+            msg = 'Error while retrieving statistics'
+        p(nick=nick, msg=msg)
 
 def run():
     global conn
@@ -62,7 +100,7 @@ def run():
                         message = message.strip()
                         if len(message)>1 and message[0] == '!':
                             params = message[1:].split(' ')
-                            do(params[0], params[1:])
+                            do(nick=nick, cmd=params[0], params=params[1:])
                         if preferences['log']:
                             log('<%s>\t%s' % (nick, message))
         else:
