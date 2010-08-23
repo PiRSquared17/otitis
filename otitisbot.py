@@ -7,6 +7,7 @@
 
 import os
 import random
+import re
 import socket
 import sys
 import time
@@ -29,7 +30,7 @@ commands = {
             'description': u"Show the current time and date",
             },
         'stats': {
-            'aliases': ['stats', 's', 'pages', 'pags', 'p'],
+            'aliases': ['stats', 's', 'pages', 'pags', 'p', 'art', 'arts'],
             'description': u"Show the current stats",
             },
         },
@@ -39,13 +40,58 @@ commands = {
             'description': u"Muestra la hora y la fecha actuales",
             },
         'stats': {
-            'aliases': [u'estadísticas', 'estadisticas', u'páginas', 'paginas'],
+            'aliases': [u'estadísticas', 'estadisticas', u'páginas', 'paginas', 'art', 'arts'],
             'description': u"Show the current stats",
             },
         },
 }
 
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+
+def loadLanguages():
+    l = []
+    raw = ""
+    try:
+        f = urllib.urlopen('http://en.wikipedia.org/w/index.php?title=Special:SiteMatrix')
+        raw = f.read()
+        f.close()
+    except:
+        pass
+    
+    m = re.compile(ur'http://(?P<lang>[a-z\-]+)\.wikipedia\.org').finditer(raw)
+    for i in m:
+        lang=i.group('lang')
+        if lang not in ['www',] and not lang in l:
+            l.append(lang)
+    l.sort()
+    
+    return l
+
+def convertFamily(family):
+    family = family.lower()
+    
+    if family in ['wikipedia', 'wiki', 'w']:
+        return 'wikipedia'
+    elif family in ['commons', 'commmons', 'commos']:
+        return 'commons'
+    elif family in ['wiktionary', 'wikt', 'wykt', 'wikc', 'wikci', 'wikcionario', 'wiktionario']:
+        return 'wiktionary'
+    elif family in ['wikisource', 'source', 's']:
+        return 'wikisource'
+    elif family in ['wikinews', 'news', 'wikinoticias', 'noticias', 'n']:
+        return 'wikinews'
+    elif family in ['wikibooks', 'books', 'wikilibros', 'libros', 'b']:
+        return 'wikibooks'
+    elif family in ['wikiquote', 'quote', 'q', 'wikicitas', 'citas']:
+        return 'wikiquote'
+    elif family in ['wikispecies', 'wikiespecies', 'species', 'especies']:
+        return 'wikispecies'
+    elif family in ['meta', 'metawiki', 'meta-wiki', 'm']:
+        return 'meta'
+    elif family in ['wikiversity', 'wikiversidad', 'v']:
+        return 'wikiversity'
+    
+    return family
 
 def p(target=channel, nick="", msg=""):
     if msg:
@@ -59,12 +105,23 @@ def do(nick, cmd, params):
     if cmd in commands['en']['date']['aliases']+commands[lang]['date']['aliases']:
         p(nick=nick, msg=time.strftime('%Y-%m-%d %H:%M:%S'))
     elif cmd in commands['en']['stats']['aliases']+commands[lang]['stats']['aliases']:
-        url = "http://%s.%s.org/wiki/Special:Statistics?action=raw" % (lang, family)
-        try:
-            f = urllib.urlopen(url);raw = f.read();f.close()
-            msg = ', '.join(raw.split(';'))
-        except:
-            msg = 'Error while retrieving statistics'
+        if len(params)>=0 and len(params)<=2:
+            if len(params) == 0:
+                domain = "%s.%s.org" % (lang, family)
+            elif len(params) == 1:
+                domain = "%s.%s.org" % (params[0], family)
+            elif len(params) == 2:
+                params[1] = convertFamily(params[1])
+                domain = "%s.%s.org" % (params[0], params[1])
+            try:
+                url = "http://%s/wiki/Special:Statistics?action=raw" % (domain)
+                f = urllib.urlopen(url);raw = f.read();f.close()
+                msg = domain
+                msg += ' ' + ', '.join(raw.split(';'))
+            except:
+                msg = 'Error while retrieving statistics'
+        else:
+            msg = 'Unknown project. Options: !stats or !stats lang or !stats lang project'
         p(nick=nick, msg=msg)
 
 def run():
@@ -98,6 +155,7 @@ def run():
                             log('* %s %s' % (nick, message[8:]))
                     else:
                         message = message.strip()
+                        message = re.sub(ur"  +", ur" ", message)
                         if len(message)>1 and message[0] == '!':
                             params = message[1:].split(' ')
                             do(nick=nick, cmd=params[0], params=params[1:])
@@ -126,6 +184,10 @@ def open_log():
     log_file = (date, file)
 
 def main():
+    global langs
+    
+    langs = loadLanguages()
+    
     while True:
         try:
             run()
