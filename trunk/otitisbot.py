@@ -14,9 +14,11 @@ import time
 import urllib
 
 #TODO:
-#returns whe kicked
+#returns when kicked
 #local times using -utc:+10 or -utc:-2
 #!stats in local lang
+#newpages patrol
+#wikitext flag (bn: only when !link)
 
 conn = '' #conection
 langs = []
@@ -29,6 +31,7 @@ preferences = {
     'ownernick': 'Emijrp',
     'log': False,
     'test': False,
+    'newpages': False,
 }
 
 commands = {
@@ -133,14 +136,18 @@ def getParameters():
                 preferences['ownernick'] = arg[11:]
             obligatory-=1
         elif arg.startswith('-test'):
-            if len(arg) == 9:
+            if len(arg) == 5:
                 pass
                 #preferences['test'] = wikipedia.input(u'Please enter test mode (True or False):')
             else:
-                preferences['test'] = arg[10:]
+                preferences['test'] = arg[6:]
         elif arg.startswith('-log'):
             if len(arg) == 4:
                 preferences['log'] = True
+        elif arg.startswith('-newpages'):
+            if len(arg) == 9:
+                preferences['newpages'] = True
+        
     
     if obligatory:
         print u"Not all obligatory parameters were found. Please, check (*) parameters."
