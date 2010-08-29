@@ -13,15 +13,23 @@ import sys
 import time
 import urllib
 
-conn = ''
-botnick = 'otitis%d' % (random.randint(1000,9999))
-lang = 'es'
-family = 'wikipedia'
-server = 'irc.freenode.net'
-channel = '#%s-%s-testing' % (family, lang)
+#TODO:
+#returns whe kicked
+#local times using -utc:+10 or -utc:-2
+#!stats in local lang
 
-preferences = {}
-preferences['log'] = False
+conn = '' #conection
+langs = []
+preferences = {
+    'lang': 'en',
+    'family': 'wikipedia',
+    'server': 'irc.freenode.net',
+    'channel': '#wikipedia-en',
+    'botnick': 'Otitis%d' % (random.randint(1000,9999)),
+    'ownernick': 'Emijrp',
+    'log': False,
+    'test': False,
+}
 
 commands = {
     'en': {
@@ -29,6 +37,10 @@ commands = {
             'aliases': ['date', 'd', 'time', 't', 'datetime', 'dt'],
             'description': u"Show the current time and date",
             },
+        'help': {
+            'aliases': ['help', 'h'],
+            'description': u"Show available commands",
+        },
         'stats': {
             'aliases': ['stats', 's', 'pages', 'pags', 'p', 'art', 'arts'],
             'description': u"Show the current stats",
@@ -39,14 +51,100 @@ commands = {
             'aliases': ['fecha', 'hora'],
             'description': u"Muestra la hora y la fecha actuales",
             },
+        'help': {
+            'aliases': ['ayuda', u'ayúdame', 'ayudame'],
+            'description': u"Muestra los comandos disponibles",
+        },
         'stats': {
-            'aliases': [u'estadísticas', 'estadisticas', u'páginas', 'paginas', 'art', 'arts'],
-            'description': u"Show the current stats",
+            'aliases': [u'estadísticas', 'estadisticas', u'páginas', 'paginas'],
+            'description': u"Muestra las estadísticas básicas del proyecto",
+            },
+        },
+    'bn': {
+        'date': {
+            'aliases': [],
+            'description': u"বর্তমান সময় ও তারিখ প্রদর্শন করবে",
+            },
+        'help': {
+            'aliases': [],
+            'description': u"প্রযোজ্য কমান্ডগুলো প্রদর্শন করবে",
+        },
+        'stats': {
+            'aliases': [],
+            'description': u"বর্তমান পরিসংখ্যান প্রদর্শন করবে",
             },
         },
 }
 
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+
+def getParameters():
+    """ Gestionar parámetros capturados de la consola """
+    """ Manage console parameters """
+    args=sys.argv
+    
+    obligatory=5
+    for arg in args[1:]:
+        if arg.startswith('-lang'):
+            if len(arg) == 5:
+                pass
+                #preferences['lang'] = wikipedia.input(u'Please enter the language (es, en, de, fr, bn, ...):')
+            else:
+                preferences['lang'] = arg[6:]
+            obligatory-=1
+        elif arg.startswith('-family'):
+            if len(arg) == 7:
+                pass
+                #preferences['family'] = wikipedia.input(u'Please enter the family project (wikipedia, wiktionary, ...):')
+            else:
+                preferences['family'] = arg[8:]
+            obligatory-=1
+        elif arg.startswith('-botnick'):
+            if len(arg) == 8:
+                pass
+                #preferences['botnick'] = wikipedia.input(u'Please enter bot username:')
+            else:
+                preferences['botnick'] = arg[9:]
+            obligatory-=1
+        elif arg.startswith('-statsdelay'):
+            if len(arg) == 11:
+                pass
+                #preferences['statsdelay'] = int(wikipedia.input(u'Please enter stats delay (in seconds):'))
+            else:
+                preferences['statsdelay'] = int(arg[12:])
+        elif arg.startswith('-network'):
+            if len(arg) == 8:
+                pass
+                #preferences['network'] = wikipedia.input(u'Please enter IRC network:')
+            else:
+                preferences['network'] = arg[9:]
+        elif arg.startswith('-channel'):
+            if len(arg) == 8:
+                pass
+                #preferences['channel'] = wikipedia.input(u'Please enter IRC channel (with #):')
+            else:
+                preferences['channel'] = arg[9:]
+            obligatory-=1
+        elif arg.startswith('-ownernick'):
+            if len(arg) == 10:
+                pass
+                #preferences['ownernick'] = wikipedia.input(u'Please enter owner username:')
+            else:
+                preferences['ownernick'] = arg[11:]
+            obligatory-=1
+        elif arg.startswith('-test'):
+            if len(arg) == 9:
+                pass
+                #preferences['test'] = wikipedia.input(u'Please enter test mode (True or False):')
+            else:
+                preferences['test'] = arg[10:]
+        elif arg.startswith('-log'):
+            if len(arg) == 4:
+                preferences['log'] = True
+    
+    if obligatory:
+        print u"Not all obligatory parameters were found. Please, check (*) parameters."
+        sys.exit()
 
 def loadLanguages():
     l = []
@@ -93,8 +191,11 @@ def convertFamily(family):
     
     return family
 
-def p(target=channel, nick="", msg=""):
+def p(target="", nick="", msg=""):
+    if not target: #not possible argument target=preferences['channel'], loaded before getParameters()
+        target = preferences['channel']
     if msg:
+        msg = msg.encode("utf-8")
         if nick:
             conn.send('PRIVMSG %s :%s> %s\r\n' % (target, nick, msg))
         else:
@@ -102,22 +203,53 @@ def p(target=channel, nick="", msg=""):
 
 def do(nick, cmd, params):
     cmd = cmd.lower()
-    if cmd in commands['en']['date']['aliases']+commands[lang]['date']['aliases']:
+    if cmd in commands['en']['help']['aliases']+commands[preferences['lang']]['help']['aliases']:
+        if len(params)>=0 and len(params)<=1:
+            if len(params) == 0:
+                #show available commands
+                msg = u'Available commands: !'
+                if commands.has_key(preferences['lang']):
+                    msg += u', !'.join(commands[preferences['lang']].keys())
+                else:
+                    msg = u'No commands found'
+            elif len(params) == 1:
+                params[0] = re.sub(ur'!', ur'', params[0]).lower()
+                if commands.has_key(preferences['lang']):
+                    for command, props in commands[preferences['lang']].items():
+                        if params[0] in [command]+props['aliases']:
+                            msg = u'!%s: %s (English: %s)' % (params[0], props['description'], commands['en'][command]['description'])
+                            break
+                        else:
+                            msg = u'Command !%s not found' % (params[0])
+                else:
+                    msg = u'No available commands for %s language' % (preferences['lang'])
+        else:
+            msg = u'Write !help'
+        p(nick=nick, msg=msg)
+    elif cmd in commands['en']['date']['aliases']+commands[preferences['lang']]['date']['aliases']:
         p(nick=nick, msg=time.strftime('%Y-%m-%d %H:%M:%S'))
-    elif cmd in commands['en']['stats']['aliases']+commands[lang]['stats']['aliases']:
+    elif cmd in commands['en']['stats']['aliases']+commands[preferences['lang']]['stats']['aliases']:
         if len(params)>=0 and len(params)<=2:
             if len(params) == 0:
-                domain = "%s.%s.org" % (lang, family)
+                domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
             elif len(params) == 1:
-                domain = "%s.%s.org" % (params[0], family)
+                if params[0] in langs:
+                    domain = "%s.%s.org" % (params[0], preferences['family'])
+                else:
+                    params[0] = convertFamily(params[0])
+                    domain = "%s.%s.org" % (preferences['lang'], params[0])
             elif len(params) == 2:
                 params[1] = convertFamily(params[1])
                 domain = "%s.%s.org" % (params[0], params[1])
             try:
                 url = "http://%s/wiki/Special:Statistics?action=raw" % (domain)
                 f = urllib.urlopen(url);raw = f.read();f.close()
-                msg = domain
-                msg += ' ' + ', '.join(raw.split(';'))
+                if re.search(ur'(?i)DOCTYPE', raw):
+                    msg = u'Project not found'
+                else:
+                    msg = u'http://%s ' % domain
+                    msg += u', '.join(raw.split(';'))
+                    msg += u' (from http://%s/wiki/Special:Statistics?action=raw)' % domain
             except:
                 msg = 'Error while retrieving statistics'
         else:
@@ -127,11 +259,11 @@ def do(nick, cmd, params):
 def run():
     global conn
     conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    conn.connect((server, 6667))
+    conn.connect((preferences['server'], 6667))
 
-    conn.sendall('USER %s * * %s\r\n' % (botnick, botnick))
-    conn.sendall('NICK %s\r\n' % (botnick))
-    conn.sendall('JOIN %s\r\n' % channel)
+    conn.sendall('USER %s * * %s\r\n' % (preferences['botnick'], preferences['botnick']))
+    conn.sendall('NICK %s\r\n' % (preferences['botnick']))
+    conn.sendall('JOIN %s\r\n' % preferences['channel'])
     
     open_log()
     buffer = ''
@@ -149,7 +281,7 @@ def run():
                 nick = data[0][1:data[0].index('!')]
                 target = data[2]
                 message = data[3][1:]
-                if target == channel:
+                if target == preferences['channel']:
                     if message.startswith('\x01ACTION'):
                         if preferences['log']:
                             log('* %s %s' % (nick, message[8:]))
@@ -180,14 +312,18 @@ def log(msg):
 def open_log():
     global log_file, channel
     date = time.strftime('%Y-%m-%d')
-    file = open('%s_%s.txt' % (channel[1:], date), 'a')
+    file = open('%s_%s.txt' % (preferences['channel'][1:], date), 'a')
     log_file = (date, file)
 
 def main():
     global langs
     
     langs = loadLanguages()
+    getParameters()
     
+    print preferences
+    
+    #sys.exit()
     while True:
         try:
             run()
