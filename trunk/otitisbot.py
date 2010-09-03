@@ -32,6 +32,7 @@ preferences = {
     'log': False,
     'test': False,
     'newpages': False,
+    'wikitext': False,
 }
 
 commands = {
@@ -147,7 +148,9 @@ def getParameters():
         elif arg.startswith('-newpages'):
             if len(arg) == 9:
                 preferences['newpages'] = True
-        
+        elif arg.startswith('-wikitext'):
+            if len(arg) == 9:
+                preferences['wikitext'] = True
     
     if obligatory:
         print u"Not all obligatory parameters were found. Please, check (*) parameters."
@@ -202,11 +205,12 @@ def p(target="", nick="", msg=""):
     if not target: #not possible argument target=preferences['channel'], loaded before getParameters()
         target = preferences['channel']
     if msg:
-        msg = msg.encode("utf-8")
+        #msg = msg.encode("utf-8")
         if nick:
             conn.send('PRIVMSG %s :%s> %s\r\n' % (target, nick, msg))
         else:
             conn.send('PRIVMSG %s :%s\r\n' % (target, msg))
+    time.sleep(1) #delay to avoid flooding
 
 def do(nick, cmd, params):
     cmd = cmd.lower()
@@ -277,6 +281,7 @@ def run():
     while True:
         if '\n' in buffer:
             line = buffer[:buffer.index('\n')]
+            #line = unicode(line, "utf-8")
             buffer = buffer[len(line) + 1:]
             line = line.strip()
             print >>sys.stderr, line
@@ -298,6 +303,12 @@ def run():
                         if len(message)>1 and message[0] == '!':
                             params = message[1:].split(' ')
                             do(nick=nick, cmd=params[0], params=params[1:])
+                        if preferences['wikitext']:
+                            links = re.findall(ur"\[\[([^\|\]]+?)[\]\|]", message)
+                            for link in links[:3]:
+                                link = re.sub(r" ", r"_", link)
+                                msg = "http://%s.%s.org/wiki/%s_" % (preferences['lang'], preferences['family'], link)
+                                p(nick=nick, msg=msg)
                         if preferences['log']:
                             log('<%s>\t%s' % (nick, message))
         else:
