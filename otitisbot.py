@@ -304,11 +304,13 @@ def run():
                             params = message[1:].split(' ')
                             do(nick=nick, cmd=params[0], params=params[1:])
                         if preferences['wikitext']:
-                            links = re.findall(ur"\[\[([^\|\]]+?)[\]\|]", message)
-                            for link in links[:3]:
+                            links = re.findall(ur"\[\[([^\|\[\]]+?)[\]\|]", message)
+                            links2 = []
+                            for link in links:
                                 link = re.sub(r" ", r"_", link)
-                                msg = "http://%s.%s.org/wiki/%s_" % (preferences['lang'], preferences['family'], link)
-                                p(nick=nick, msg=msg)
+                                links2.append("http://%s.%s.org/wiki/%s_" % (preferences['lang'], preferences['family'], link))
+                            msg = " ".join(links2[:5])
+                            p(nick=nick, msg=msg)
                         if preferences['log']:
                             log('<%s>\t%s' % (nick, message))
         else:
