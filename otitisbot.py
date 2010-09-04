@@ -160,16 +160,16 @@ def loadLanguages():
     l = []
     raw = ""
     try:
-        f = urllib.urlopen('http://en.wikipedia.org/w/index.php?title=Special:SiteMatrix')
+        f = urllib.urlopen('http://noc.wikimedia.org/conf/all.dblist')
         raw = f.read()
         f.close()
     except:
         pass
     
-    m = re.compile(ur'http://(?P<lang>[a-z\-]+)\.wikipedia\.org').finditer(raw)
+    m = re.compile(ur'(?im)^(?P<lang>[^\s]+?)wiki\n').finditer(raw)
     for i in m:
         lang=i.group('lang')
-        if lang not in ['www',] and not lang in l:
+        if lang not in l:
             l.append(lang)
     l.sort()
     
@@ -210,7 +210,7 @@ def p(target="", nick="", msg=""):
             conn.send('PRIVMSG %s :%s> %s\r\n' % (target, nick, msg))
         else:
             conn.send('PRIVMSG %s :%s\r\n' % (target, msg))
-    time.sleep(1) #delay to avoid flooding
+    #time.sleep(1) #delay to avoid flooding
 
 def do(nick, cmd, params):
     cmd = cmd.lower()
@@ -241,16 +241,24 @@ def do(nick, cmd, params):
         p(nick=nick, msg=time.strftime('%Y-%m-%d %H:%M:%S'))
     elif cmd in commands['en']['stats']['aliases']+commands[preferences['lang']]['stats']['aliases']:
         if len(params)>=0 and len(params)<=2:
-            if len(params) == 0:
-                domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
-            elif len(params) == 1:
+            domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
+            if len(params) == 1:
+                params = params[0].split('.')
+                if len(params) == 1:
+                    params = params[0].split('-')
+            if len(params) == 1:
                 if params[0] in langs:
                     domain = "%s.%s.org" % (params[0], preferences['family'])
                 else:
                     params[0] = convertFamily(params[0])
                     domain = "%s.%s.org" % (preferences['lang'], params[0])
             elif len(params) == 2:
-                params[1] = convertFamily(params[1])
+                if params[0] in langs:
+                    params[1] = convertFamily(params[1])
+                elif params[1] in langs:
+                    temp = params[1]
+                    params[1] = convertFamily(params[0])
+                    params[0] = temp
                 domain = "%s.%s.org" % (params[0], params[1])
             try:
                 url = "http://%s/wiki/Special:Statistics?action=raw" % (domain)
@@ -352,6 +360,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
