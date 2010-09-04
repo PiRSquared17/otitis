@@ -11,6 +11,7 @@ import re
 import socket
 import sys
 import time
+import thread
 import urllib
 
 #TODO:
@@ -22,6 +23,8 @@ import urllib
 
 conn = '' #conection
 langs = []
+newpageslog = []
+editslog = []
 preferences = {
     'lang': 'en',
     'family': 'wikipedia',
@@ -32,6 +35,7 @@ preferences = {
     'log': False,
     'test': False,
     'newpages': False,
+    'edits': False,
     'wikitext': False,
 }
 
@@ -81,6 +85,58 @@ commands = {
 }
 
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
+
+def newpages():
+    recentchanges(rctype="new")
+
+def edits():
+    recentchanges(rctype="edit")
+
+def recentchanges(rctype=""):
+    global newpageslog
+    global editslog
+    
+    rclimit = 10
+    t1 = time.time()
+    while True:
+        while time.time()-t1 < 10:
+            time.sleep(1)
+        t1 = time.time()
+        domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
+        path = "/w/api.php?action=query&list=recentchanges&rctype=%s&rcnamespace=0&rcprop=title|user|ids&rclimit=%d" % (rctype, rclimit)
+        raw = urllib.urlopen(u"http://%s%s" % (domain, path)).read()
+        regexp = """(?im)<span style="color:blue;">&lt;rc type=&quot;(?P<type>%s)&quot; ns=&quot;\d+&quot; title=&quot;(?P<title>[^\n]+?)&quot; rcid=&quot;(?P<rcid>\d+?)&quot; pageid=&quot;(?P<pageid>\d+?)&quot; revid=&quot;(?P<revid>\d+?)&quot; old_revid=&quot;(?P<old_revid>\d+?)&quot; user=&quot;(?P<user>[^\n]+?)&quot;( anon=&quote;&quote;)? /&gt;</span>""" % (rctype)
+        #http://bn.wikipedia.org/w/api.php?action=query&list=recentchanges&rctype=new&rcnamespace=0&rcprop=title|user|ids&rclimit=10
+        #<span style="color:blue;">&lt;rc type=&quot;new&quot; ns=&quot;0&quot; title=&quot;রামপ্রসাদ সেন&quot; rcid=&quot;701636&quot; pageid=&quot;114556&quot; revid=&quot;701795&quot; old_revid=&quot;0&quot; user=&quot;Jonoikobangali&quot; /&gt;</span>
+
+        m = re.compile(regexp).finditer(raw)
+        for i in m:
+            type = i.group('type')
+            title = i.group('title')
+            rcid = i.group('rcid')
+            pageid = i.group('pageid')
+            revid = i.group('revid')
+            old_revid = i.group('old_revid')
+            user = i.group('user')
+            
+            #print title, rcid, pageid, revid, old_revid, user
+            
+            msg = ""
+            if type == "new":
+                if len(newpageslog)>rclimit:
+                    if revid not in newpageslog:
+                        msg = "[[%s]] created by User:%s. Link: http://%s/wiki/%s_ (Permalink: http://%s/w/index.php?oldid=%s)" % (title, user, domain, title, domain, revid)
+                if revid not in newpageslog:
+                    newpageslog.append(revid)
+            elif type == "edit":
+                if len(editslog)>rclimit:
+                    if revid not in editslog:
+                        msg = "[[%s]] edited by User:%s. Diff: http://%s/w/index.php?oldid=%s" % (title, user, domain, revid)
+                if revid not in editslog:
+                    editslog.append(revid)
+            if msg:
+                p(msg=msg)
+    
 
 def getParameters():
     """ Gestionar parámetros capturados de la consola """
@@ -148,6 +204,9 @@ def getParameters():
         elif arg.startswith('-newpages'):
             if len(arg) == 9:
                 preferences['newpages'] = True
+        elif arg.startswith('-edits'):
+            if len(arg) == 6:
+                preferences['edits'] = True
         elif arg.startswith('-wikitext'):
             if len(arg) == 9:
                 preferences['wikitext'] = True
@@ -242,10 +301,13 @@ def do(nick, cmd, params):
     elif cmd in commands['en']['stats']['aliases']+commands[preferences['lang']]['stats']['aliases']:
         if len(params)>=0 and len(params)<=2:
             domain = ""
-            if len(params) == 1:
+            if len(params) == 0:
+                domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
+            elif len(params) == 1:
                 params = params[0].split('.')
                 if len(params) == 1:
                     params = params[0].split('-')
+            
             if len(params) == 1:
                 if params[0] in langs:
                     domain = "%s.%s.org" % (params[0], preferences['family'])
@@ -350,6 +412,12 @@ def main():
     getParameters()
     
     print preferences
+    
+    if preferences['newpages']:
+        thread.start_new_thread(newpages, ())
+    if preferences['edits']:
+        thread.start_new_thread(edits, ())
+    
     
     #sys.exit()
     while True:
