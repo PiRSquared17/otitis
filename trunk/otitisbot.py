@@ -103,10 +103,10 @@ def recentchanges(rctype=""):
             time.sleep(1)
         t1 = time.time()
         domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
-        path = "/w/api.php?action=query&list=recentchanges&rctype=%s&rcnamespace=&rcprop=title|user|ids&rclimit=%d" % (rctype, rclimit)
+        path = "/w/api.php?action=query&list=recentchanges&rctype=%s&rcnamespace=&rcprop=title|user|ids&rclimit=%d&rcshow=!bot" % (rctype, rclimit)
         raw = urllib.urlopen(u"http://%s%s" % (domain, path)).read()
         regexp = """(?im)<span style="color:blue;">&lt;rc type=&quot;(?P<type>%s)&quot; ns=&quot;\d+&quot; title=&quot;(?P<title>[^\n]+?)&quot; rcid=&quot;(?P<rcid>\d+?)&quot; pageid=&quot;(?P<pageid>\d+?)&quot; revid=&quot;(?P<revid>\d+?)&quot; old_revid=&quot;(?P<old_revid>\d+?)&quot; user=&quot;(?P<user>[^\n]+?)&quot;( anon=&quote;&quote;)? /&gt;</span>""" % (rctype)
-        #http://bn.wikipedia.org/w/api.php?action=query&list=recentchanges&rctype=new&rcnamespace=&rcprop=title|user|ids&rclimit=10
+        #http://bn.wikipedia.org/w/api.php?action=query&list=recentchanges&rctype=new&rcnamespace=&rcprop=title|user|ids&rclimit=10&rcshow=!bot
         #<span style="color:blue;">&lt;rc type=&quot;new&quot; ns=&quot;0&quot; title=&quot;রামপ্রসাদ সেন&quot; rcid=&quot;701636&quot; pageid=&quot;114556&quot; revid=&quot;701795&quot; old_revid=&quot;0&quot; user=&quot;Jonoikobangali&quot; /&gt;</span>
 
         m = re.compile(regexp).finditer(raw)
