@@ -113,11 +113,13 @@ def recentchanges(rctype=""):
         for i in m:
             type = i.group('type')
             title = i.group('title')
+            title_ = re.sub(ur" ", ur"_", title)
             rcid = i.group('rcid')
             pageid = i.group('pageid')
             revid = i.group('revid')
             old_revid = i.group('old_revid')
             user = i.group('user')
+            user_ = re.sub(ur" ", ur"_", user)
             
             #print title, rcid, pageid, revid, old_revid, user
             
@@ -125,13 +127,13 @@ def recentchanges(rctype=""):
             if type == "new":
                 if len(newpageslog)>rclimit:
                     if revid not in newpageslog:
-                        msg = " [[%s]] *created* by User:%s. Link: http://%s/wiki/%s_ Permalink: http://%s/w/index.php?oldid=%s User contributions: http://%s/wiki/Special:Contributions/%s_" % (title, user, domain, title, domain, revid, domain, user)
+                        msg = " [[%s]] *created* by User:%s. Link: http://%s/wiki/%s_ Permalink: http://%s/w/index.php?oldid=%s User contributions: http://%s/wiki/Special:Contributions/%s_" % (title, user, domain, title_, domain, revid, domain, user_)
                 if revid not in newpageslog:
                     newpageslog.append(revid)
             elif type == "edit":
                 if len(editslog)>rclimit:
                     if revid not in editslog:
-                        msg = "[[%s]] *edited* by User:%s. Diff: http://%s/w/index.php?oldid=%s&diff=prev User contributions: http://%s/wiki/Special:Contributions/%s_" % (title, user, domain, revid, domain, user)
+                        msg = "[[%s]] *edited* by User:%s. Diff: http://%s/w/index.php?oldid=%s&diff=prev User contributions: http://%s/wiki/Special:Contributions/%s_" % (title, user, domain, revid, domain, user_)
                 if revid not in editslog:
                     editslog.append(revid)
             if msg:
