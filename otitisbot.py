@@ -241,7 +241,7 @@ def do(nick, cmd, params):
         p(nick=nick, msg=time.strftime('%Y-%m-%d %H:%M:%S'))
     elif cmd in commands['en']['stats']['aliases']+commands[preferences['lang']]['stats']['aliases']:
         if len(params)>=0 and len(params)<=2:
-            domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
+            domain = ""
             if len(params) == 1:
                 params = params[0].split('.')
                 if len(params) == 1:
