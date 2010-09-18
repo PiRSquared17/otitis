@@ -104,7 +104,8 @@ def recentchanges(rctype=""):
         t1 = time.time()
         domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
         path = "/w/api.php?action=query&list=recentchanges&rctype=%s&rcnamespace=&rcprop=title|user|ids&rclimit=%d&rcshow=!bot" % (rctype, rclimit)
-        raw = urllib.urlopen(u"http://%s%s" % (domain, path)).read()
+        raw = urllib.urlopen("http://%s%s" % (domain, path)).read()
+        raw = unicode(raw, "utf-8")
         regexp = """(?im)<span style="color:blue;">&lt;rc type=&quot;(?P<type>%s)&quot; ns=&quot;\d+&quot; title=&quot;(?P<title>[^\n]+?)&quot; rcid=&quot;(?P<rcid>\d+?)&quot; pageid=&quot;(?P<pageid>\d+?)&quot; revid=&quot;(?P<revid>\d+?)&quot; old_revid=&quot;(?P<old_revid>\d+?)&quot; user=&quot;(?P<user>[^\n]+?)&quot;( anon=&quote;&quote;)? /&gt;</span>""" % (rctype)
         #http://bn.wikipedia.org/w/api.php?action=query&list=recentchanges&rctype=new&rcnamespace=&rcprop=title|user|ids&rclimit=10&rcshow=!bot
         #<span style="color:blue;">&lt;rc type=&quot;new&quot; ns=&quot;0&quot; title=&quot;রামপ্রসাদ সেন&quot; rcid=&quot;701636&quot; pageid=&quot;114556&quot; revid=&quot;701795&quot; old_revid=&quot;0&quot; user=&quot;Jonoikobangali&quot; /&gt;</span>
@@ -113,13 +114,13 @@ def recentchanges(rctype=""):
         for i in m:
             type = i.group('type')
             title = i.group('title')
-            title_ = re.sub(ur" ", ur"_", title)
+            title_ = re.sub(" ", "_", title)
             rcid = i.group('rcid')
             pageid = i.group('pageid')
             revid = i.group('revid')
             old_revid = i.group('old_revid')
             user = i.group('user')
-            user_ = re.sub(ur" ", ur"_", user)
+            user_ = re.sub(" ", "_", user)
             
             #print title, rcid, pageid, revid, old_revid, user
             
@@ -127,7 +128,7 @@ def recentchanges(rctype=""):
             if type == "new":
                 if len(newpageslog)>rclimit:
                     if revid not in newpageslog:
-                        msg = " [[%s]] *created* by User:%s. Link: http://%s/wiki/%s_ Permalink: http://%s/w/index.php?oldid=%s User contributions: http://%s/wiki/Special:Contributions/%s_" % (title, user, domain, title_, domain, revid, domain, user_)
+                        msg = "[[%s]] *created* by User:%s. Link: http://%s/wiki/%s_ Permalink: http://%s/w/index.php?oldid=%s User contributions: http://%s/wiki/Special:Contributions/%s_" % (title, user, domain, title_, domain, revid, domain, user_)
                 if revid not in newpageslog:
                     newpageslog.append(revid)
             elif type == "edit":
@@ -413,13 +414,10 @@ def main():
     langs = loadLanguages()
     getParameters()
     
-    print preferences
-    
     if preferences['newpages']:
         thread.start_new_thread(newpages, ())
     if preferences['edits']:
         thread.start_new_thread(edits, ())
-    
     
     #sys.exit()
     while True:
