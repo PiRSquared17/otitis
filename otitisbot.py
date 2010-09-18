@@ -43,43 +43,43 @@ commands = {
     'en': {
         'date': {
             'aliases': ['date', 'd', 'time', 't', 'datetime', 'dt'],
-            'description': u"Show the current time and date",
+            'description': "Show the current time and date",
             },
         'help': {
             'aliases': ['help', 'h'],
-            'description': u"Show available commands",
-        },
+            'description': "Show available commands",
+            },
         'stats': {
             'aliases': ['stats', 's', 'pages', 'pags', 'p', 'art', 'arts'],
-            'description': u"Show the current stats",
+            'description': "Show the current stats",
             },
         },
     'es': {
         'date': {
             'aliases': ['fecha', 'hora'],
-            'description': u"Muestra la hora y la fecha actuales",
+            'description': "Muestra la hora y la fecha actuales",
             },
         'help': {
-            'aliases': ['ayuda', u'ayúdame', 'ayudame'],
-            'description': u"Muestra los comandos disponibles",
-        },
+            'aliases': ['ayuda', 'ayúdame', 'ayudame'],
+            'description': "Muestra los comandos disponibles",
+            },
         'stats': {
-            'aliases': [u'estadísticas', 'estadisticas', u'páginas', 'paginas'],
-            'description': u"Muestra las estadísticas básicas del proyecto",
+            'aliases': ['estadísticas', 'estadisticas', 'páginas', 'paginas'],
+            'description': "Muestra las estadísticas básicas del proyecto",
             },
         },
     'bn': {
         'date': {
             'aliases': [],
-            'description': u"বর্তমান সময় ও তারিখ প্রদর্শন করবে",
+            'description': "বর্তমান সময় ও তারিখ প্রদর্শন করবে",
             },
         'help': {
             'aliases': [],
-            'description': u"প্রযোজ্য কমান্ডগুলো প্রদর্শন করবে",
-        },
+            'description': "প্রযোজ্য কমান্ডগুলো প্রদর্শন করবে",
+            },
         'stats': {
             'aliases': [],
-            'description': u"বর্তমান পরিসংখ্যান প্রদর্শন করবে",
+            'description': "বর্তমান পরিসংখ্যান প্রদর্শন করবে",
             },
         },
 }
@@ -279,24 +279,24 @@ def do(nick, cmd, params):
         if len(params)>=0 and len(params)<=1:
             if len(params) == 0:
                 #show available commands
-                msg = u'Available commands: !'
+                msg = 'Available commands: !'
                 if commands.has_key(preferences['lang']):
-                    msg += u', !'.join(commands[preferences['lang']].keys())
+                    msg += ', !'.join(commands[preferences['lang']].keys())
                 else:
-                    msg = u'No commands found'
+                    msg = 'No commands found'
             elif len(params) == 1:
                 params[0] = re.sub(ur'!', ur'', params[0]).lower()
                 if commands.has_key(preferences['lang']):
                     for command, props in commands[preferences['lang']].items():
                         if params[0] in [command]+props['aliases']:
-                            msg = u'!%s: %s (English: %s)' % (params[0], props['description'], commands['en'][command]['description'])
+                            msg = '!%s: %s (English: %s)' % (params[0], props['description'], commands['en'][command]['description'])
                             break
                         else:
-                            msg = u'Command !%s not found' % (params[0])
+                            msg = 'Command !%s not found' % (params[0])
                 else:
-                    msg = u'No available commands for %s language' % (preferences['lang'])
+                    msg = 'No available commands for %s language' % (preferences['lang'])
         else:
-            msg = u'Write !help'
+            msg = 'Write !help'
         p(nick=nick, msg=msg)
     elif cmd in commands['en']['date']['aliases']+commands[preferences['lang']]['date']['aliases']:
         p(nick=nick, msg=time.strftime('%Y-%m-%d %H:%M:%S'))
@@ -328,11 +328,11 @@ def do(nick, cmd, params):
                 url = "http://%s/wiki/Special:Statistics?action=raw" % (domain)
                 f = urllib.urlopen(url);raw = f.read();f.close()
                 if re.search(ur'(?i)DOCTYPE', raw):
-                    msg = u'Project not found'
+                    msg = 'Project not found'
                 else:
-                    msg = u'http://%s ' % domain
-                    msg += u', '.join(raw.split(';'))
-                    msg += u' (from http://%s/wiki/Special:Statistics?action=raw)' % domain
+                    msg = 'http://%s ' % domain
+                    msg += ', '.join(raw.split(';'))
+                    msg += ' (from http://%s/wiki/Special:Statistics?action=raw)' % domain
             except:
                 msg = 'Error while retrieving statistics'
         else:
