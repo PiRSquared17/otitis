@@ -105,7 +105,7 @@ def recentchanges(rctype=""):
         domain = "%s.%s.org" % (preferences['lang'], preferences['family'])
         path = "/w/api.php?action=query&list=recentchanges&rctype=%s&rcnamespace=&rcprop=title|user|ids&rclimit=%d&rcshow=!bot" % (rctype, rclimit)
         raw = urllib.urlopen("http://%s%s" % (domain, path)).read()
-        raw = unicode(raw, "utf-8")
+        #raw = unicode(raw, "utf-8")
         regexp = """(?im)<span style="color:blue;">&lt;rc type=&quot;(?P<type>%s)&quot; ns=&quot;\d+&quot; title=&quot;(?P<title>[^\n]+?)&quot; rcid=&quot;(?P<rcid>\d+?)&quot; pageid=&quot;(?P<pageid>\d+?)&quot; revid=&quot;(?P<revid>\d+?)&quot; old_revid=&quot;(?P<old_revid>\d+?)&quot; user=&quot;(?P<user>[^\n]+?)&quot;( anon=&quote;&quote;)? /&gt;</span>""" % (rctype)
         #http://bn.wikipedia.org/w/api.php?action=query&list=recentchanges&rctype=new&rcnamespace=&rcprop=title|user|ids&rclimit=10&rcshow=!bot
         #<span style="color:blue;">&lt;rc type=&quot;new&quot; ns=&quot;0&quot; title=&quot;রামপ্রসাদ সেন&quot; rcid=&quot;701636&quot; pageid=&quot;114556&quot; revid=&quot;701795&quot; old_revid=&quot;0&quot; user=&quot;Jonoikobangali&quot; /&gt;</span>
@@ -228,7 +228,7 @@ def loadLanguages():
     except:
         pass
     
-    m = re.compile(ur'(?im)^(?P<lang>[^\s]+?)wiki\n').finditer(raw)
+    m = re.compile(r'(?im)^(?P<lang>[^\s]+?)wiki\n').finditer(raw)
     for i in m:
         lang=i.group('lang')
         if lang not in l:
@@ -286,7 +286,7 @@ def do(nick, cmd, params):
                 else:
                     msg = 'No commands found'
             elif len(params) == 1:
-                params[0] = re.sub(ur'!', ur'', params[0]).lower()
+                params[0] = re.sub(r'!', r'', params[0]).lower()
                 if commands.has_key(preferences['lang']):
                     for command, props in commands[preferences['lang']].items():
                         if params[0] in [command]+props['aliases']:
@@ -328,7 +328,7 @@ def do(nick, cmd, params):
             try:
                 url = "http://%s/wiki/Special:Statistics?action=raw" % (domain)
                 f = urllib.urlopen(url);raw = f.read();f.close()
-                if re.search(ur'(?i)DOCTYPE', raw):
+                if re.search(r'(?i)DOCTYPE', raw):
                     msg = 'Project not found'
                 else:
                     msg = 'http://%s ' % domain
@@ -372,12 +372,12 @@ def run():
                             log('* %s %s' % (nick, message[8:]))
                     else:
                         message = message.strip()
-                        message = re.sub(ur"  +", ur" ", message)
+                        message = re.sub(r"  +", r" ", message)
                         if len(message)>1 and message[0] == '!':
                             params = message[1:].split(' ')
                             do(nick=nick, cmd=params[0], params=params[1:])
                         if preferences['wikitext']:
-                            links = re.findall(ur"\[\[([^\|\[\]]+?)[\]\|]", message)
+                            links = re.findall(r"\[\[([^\|\[\]]+?)[\]\|]", message)
                             links2 = []
                             for link in links:
                                 link = re.sub(r" ", r"_", link)
