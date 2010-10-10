@@ -5,7 +5,7 @@ import sys, socket, time, os, thread, re
 
 conn = None
 server = 'irc.freenode.net'
-channel = '#wikimedia-fundraising-test'
+channel = '#wikimedia-fundraising'
 feedhistory = []
 
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
