@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# MIT License
+# MIT License: bryan, emijrp
 
 import sys, socket, time, os, thread, re
 
