@@ -10,6 +10,8 @@ feedhistory = []
 
 os.chdir(os.path.abspath(os.path.dirname(sys.argv[0])))
 
+#todo: avoid flooding, avoid publish items with date < last one
+
 def feed():
 	global feedhistory
 	
@@ -22,22 +24,22 @@ def feed():
 		f.close()
 		
 		#<tr><td class="left  alt"><a name="529885"></a><a href="http://wikimediafoundation.org/wiki/Special:ContributionHistory?offset=1286707692#529885"><strong>John Sneevang</strong><br />Please join me in donating fonds for the much valued and used Wikipedia</a></td><td class="left  alt" style="width: 100px;">10:48, 10 October 2010</td><td class="right  alt" style="width: 75px;"><span title="USD 35.00">USD 35.00</span></td></tr>
-		regexp = ur'(?i)<tr><td class="left[^>]*?"><a name="\d+"></a><a href="[^>]*?><strong>(?P<donor>[^<]*?)</strong>(<br />(?P<message>[^<]*?))?</a></td><td class="left[^>]*?>(?P<date>[^<]*?)</td><td class[^>]*?><span[^>]*?>(?P<donation>[^<]*?)</span></td></tr>'
+		regexp = ur'(?i)<tr><td class="left[^>]*?"><a name="\d+"></a><a href="(?P<permalink>[^>]*?)"><strong>(?P<donor>[^<]*?)</strong>(<br />(?P<message>[^<]*?))?</a></td><td class="left[^>]*?>(?P<date>[^<]*?)</td><td class[^>]*?><span[^>]*?>(?P<donation>[^<]*?)</span></td></tr>'
 		c = re.findall(regexp, raw)
 		m = re.compile(regexp).finditer(raw)
 		feed = []
 		for i in m:
-			feed.append([i.group('donor'), i.group('message'), i.group('date'), i.group('donation')])
+			feed.append([i.group('donor'), i.group('message'), i.group('date'), i.group('donation'), i.group('permalink')])
 		feed.reverse()
 		for feeditem in feed:
 			if feeditem not in feedhistory:
 				feedhistory.append(feeditem)
 				if len(feedhistory) >= len(c):
-					print feeditem
+					#print feeditem
 					if feeditem[1]:
-						msg = '[%s] "%s" by %s (%s)' % (feeditem[3], feeditem[1], feeditem[0], feeditem[2])
+						msg = '[%s] "%s" by %s (%s) %s' % (feeditem[3], feeditem[1], feeditem[0], feeditem[2], feeditem[4])
 					else:
-						msg = '[%s] by %s (%s)' % (feeditem[3], feeditem[0], feeditem[2])
+						msg = '[%s] by %s (%s) %s' % (feeditem[3], feeditem[0], feeditem[2], feeditem[4])
 					conn.send('PRIVMSG %s :%s\r\n' % (channel, msg))
 
 def run():
